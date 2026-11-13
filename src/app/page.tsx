@@ -62,7 +62,11 @@ export default function Home() {
   const dark = true;
   const [pop, setPop] = useState("");
   const [show, setShow] = useState(false);
-  const [smsRows] = useState<SmsRow[]>(demoSmsRows);
+  const [smsRows, setSmsRows] = useState<SmsRow[]>(demoSmsRows);
+  const [allocateOpen, setAllocateOpen] = useState(false);
+  const [allocateManager, setAllocateManager] = useState("");
+  const [allocatePayterm, setAllocatePayterm] = useState("Daily");
+  const [allocatePayout, setAllocatePayout] = useState("0");
   const [selectedSms, setSelectedSms] = useState<number[]>([]);
   const [smsRange, setSmsRange] = useState("All Ranges");
   const [smsClient, setSmsClient] = useState("All Clients");
@@ -258,7 +262,7 @@ export default function Home() {
         </div>
       </> : page === "SMS Numbers" ? <>
         <div className="smsActionRow">
-          <button className="smsSelectAll" onClick={()=>setSelectedSms(filteredSms.map(r=>r.id))}>✓ <span>Select All</span></button>
+          <button className="smsSelectAll" onClick={()=>{if(selectedSms.length===0){setError("Pehle numbers select karein.");return;}setAllocateOpen(true);setError("");}}>✓ <span>Allocate</span></button>
           <button className="smsDeselect" onClick={()=>setSelectedSms([])}>✕ <span>Deselect</span></button>
           <span className="smsSelectedCount">{selectedSms.length} selected</span>
         </div>
@@ -284,6 +288,7 @@ export default function Home() {
             </tbody></table></div>
           <div className="smsTableFoot">Showing {visibleSms.length ? 1 : 0} to {visibleSms.length} of {filteredSms.length} entries</div>
           <p className="smsDemoNote">Demo entries shown — live SMS inventory database connection is pending.</p>
+        {allocateOpen && <div className="allocateOverlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setAllocateOpen(false);}}><section className="allocateModal" role="dialog" aria-modal="true" aria-labelledby="allocateTitle"><h2 id="allocateTitle">Allocate All Numbers</h2><p className="allocateCount">{selectedSms.length} numbers selected</p><label>Select Manager<select value={allocateManager} onChange={e=>setAllocateManager(e.target.value)}><option value="">Please Select</option><option>Manager A</option><option>Manager B</option><option>Manager C</option></select></label><label>Payterm<select value={allocatePayterm} onChange={e=>setAllocatePayterm(e.target.value)}><option>Daily</option><option>Weekly 7</option><option>Monthly 30</option></select></label><label>Payout<input type="number" min="0" step="0.0001" value={allocatePayout} onChange={e=>setAllocatePayout(e.target.value)} /></label><div className="allocateButtons"><button type="button" className="allocateClose" onClick={()=>setAllocateOpen(false)}>Close</button><button type="button" className="allocateSubmit" onClick={()=>{if(!allocateManager){setError("Please select a manager.");return;}if(allocatePayout.trim()==="" || Number(allocatePayout)<0){setError("Please enter a valid payout.");return;}setSmsRows(old=>old.map(row=>selectedSms.includes(row.id)?{...row,manager:allocateManager,client:allocateManager,assigned:true,payout:"$"+Number(allocatePayout).toFixed(4)}:row));setSelectedSms([]);setAllocateOpen(false);setSuccess("Selected demo numbers allocated to "+allocateManager+".");setTimeout(()=>setSuccess(""),3000);}}>Allocate</button></div></section></div>}
         </section>
       </> : <div className="placeholderCard" style={{ background:panel, borderColor:border }}><h2>{page}</h2><p className="muted">Module integration is coming next.</p></div>}
       <footer className="appFooter">Copyright © 2026 VERTEX SMS.</footer>
