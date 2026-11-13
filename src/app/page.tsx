@@ -212,8 +212,8 @@ export default function Home() {
     <header className="topbar" style={{ background: panel, borderColor: border }}>
       <div className="leftHead"><button className="hamburger" aria-label="Open menu" onClick={() => setDrawer(true)}><span/><span/><span/></button><div className="brand compact"><span className="brandMark">V</span><span><span className="brandVertex">VERTEX</span> <b>SMS</b></span></div></div>
       <div className="rightHead">
-        <div className="headControl"><button className="headIcon" title="Language" onClick={() => setPop(pop === "language" ? "" : "language")}>文</button>{pop === "language" && <div className="popup">{["English","Urdu","Hindi"].map(x => <button key={x} onClick={() => { setLanguage(x); setPop(""); }}>{x}</button>)}</div>}</div>
-        <div className="headControl"><button className="headIcon" title="Theme: Dark only" aria-label="Theme: Dark only">◐</button></div>
+        <div className="headControl"><button className="headIcon" title="Language" onClick={() => setPop(pop === "language" ? "" : "language")}>◎</button>{pop === "language" && <div className="popup">{["English","Urdu","Hindi"].map(x => <button key={x} onClick={() => { setLanguage(x); setPop(""); }}>{x}</button>)}</div>}</div>
+        <div className="headControl"><button className="headIcon" title="Dark theme" aria-label="Dark theme">☾</button></div>
         <div className="headControl"><button className="avatarButton" title="Profile" onClick={() => setPop(pop === "profile" ? "" : "profile")}>{profile.avatar_url ? <img src={profile.avatar_url} alt="Profile"/> : (profile.display_name || user.email || "V").slice(0,1).toUpperCase()}</button>{pop === "profile" && <div className="popup profilePopup"><b>{profile.display_name || user.email}</b>{["My Profile","Notification","Activity Logs","Logout"].map(x => <button key={x} onClick={() => { setPop(""); if (x === "Logout") logout(); else { setPage(x); setError(""); setSuccess(""); } }}>{x}</button>)}</div>}</div>
       </div>
     </header>
@@ -227,7 +227,7 @@ export default function Home() {
     </aside>
 
     <section className="mainContent">
-      <div className="pageHeading"><h1>{page === "Dashboard" ? t[1] : page}</h1><div className="breadcrumb">⌂　›　{page === "Dashboard" ? t[1] : page}</div></div>
+      <div className="pageHeading"><h1>{page === "Dashboard" ? t[1] : page}</h1><div className="breadcrumb">⌂　›　{page === "SMS Numbers" ? <>SMS Module　›　SMS Numbers</> : page === "Dashboard" ? t[1] : page}</div></div>
       {error && <div className="alert error">{error}</div>}{success && <div className="alert success">{success}</div>}
       {page === "My Profile" ? <>
         <p className="muted">Manage your personal information and account security</p>
