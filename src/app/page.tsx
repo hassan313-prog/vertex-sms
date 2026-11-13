@@ -44,11 +44,10 @@ export default function Home() {
   const [expanded, setExpanded] = useState("");
   const [page, setPage] = useState("Dashboard");
   const [language, setLanguage] = useState("English");
-  const [theme, setTheme] = useState("Dark");
+  const dark = true;
   const [pop, setPop] = useState("");
   const [show, setShow] = useState(false);
 
-  const dark = theme === "Dark";
   const t = words[language] || words.English;
   const panel = dark ? "#0b1e35" : "#fff";
   const ink = dark ? "#f4f7fc" : "#17263b";
@@ -154,7 +153,7 @@ export default function Home() {
       <div className="leftHead"><button className="hamburger" aria-label="Open menu" onClick={() => setDrawer(true)}><span/><span/><span/></button><div className="brand compact"><span className="brandMark">V</span><span>VERTEX <b>SMS</b></span></div></div>
       <div className="rightHead">
         <div className="headControl"><button className="headIcon" title="Language" onClick={() => setPop(pop === "language" ? "" : "language")}>文</button>{pop === "language" && <div className="popup">{["English","Urdu","Hindi"].map(x => <button key={x} onClick={() => { setLanguage(x); setPop(""); }}>{x}</button>)}</div>}</div>
-        <div className="headControl"><button className="headIcon" title="Theme" onClick={() => setPop(pop === "theme" ? "" : "theme")}>◐</button>{pop === "theme" && <div className="popup">{["Dark","White"].map(x => <button key={x} onClick={() => { setTheme(x); setPop(""); }}>{x}</button>)}</div>}</div>
+        <div className="headControl"><button className="headIcon" title="Theme: Dark only" aria-label="Theme: Dark only">◐</button></div>
         <div className="headControl"><button className="avatarButton" title="Profile" onClick={() => setPop(pop === "profile" ? "" : "profile")}>{profile.avatar_url ? <img src={profile.avatar_url} alt="Profile"/> : (profile.display_name || user.email || "V").slice(0,1).toUpperCase()}</button>{pop === "profile" && <div className="popup profilePopup"><b>{profile.display_name || user.email}</b>{["My Profile","Notification","Activity Logs","Logout"].map(x => <button key={x} onClick={() => { setPop(""); if (x === "Logout") logout(); else { setPage(x); setError(""); setSuccess(""); } }}>{x}</button>)}</div>}</div>
       </div>
     </header>
@@ -162,7 +161,7 @@ export default function Home() {
     {drawer && <button className="veil" aria-label="Close menu" onClick={() => setDrawer(false)} />}
     <aside className="sidebar" style={{ display: drawer ? "block" : "none", background: dark ? "#0d1d32" : "#fff", color: ink, borderColor: border }}>
       <div className="userBlock"><div className="bigAvatar">{profile.avatar_url ? <img src={profile.avatar_url} alt="Profile"/> : (profile.display_name || user.email || "V").slice(0,1).toUpperCase()}</div><b>{profile.display_name || user.email}</b><small>{profile.role || "Client"}</small>
-        <div className="quick"><button title="Settings" onClick={() => { setPage("My Profile"); setDrawer(false); }}>⚙</button><button title="Mail" onClick={() => { setPage("Notification"); setDrawer(false); }}>✉</button><button title="Profile" onClick={() => { setPage("My Profile"); setDrawer(false); }}>♙</button><button title="Logout" onClick={logout}>↪</button></div>
+        <div className="quick"><button type="button" title="Settings" aria-label="Settings">⚙</button><button type="button" title="Notification" aria-label="Notification">✉</button><button type="button" title="Profile" aria-label="Profile">♙</button><button type="button" title="Logout" aria-label="Logout">↪</button></div>
       </div>
       <nav className="navList">{menus.map(item => <div key={item[0]}><button className={"navItem " + (page === item[0] ? "active" : "")} onClick={() => { if (item[2]) setExpanded(expanded === item[0] ? "" : item[0]); else { setPage(item[0]); setDrawer(false); } }}><span className="navIcon">{item[1]}</span><span className="navText">{item[0]}</span>{item[2] && <span className="chevron">{expanded === item[0] ? "⌄" : "›"}</span>}</button>{item[2] && expanded === item[0] && <div className="subNav">{item[2].map(child => <button key={child} onClick={() => { setPage(child); setDrawer(false); }}>{child}</button>)}</div>}</div>)}</nav>
     </aside>
