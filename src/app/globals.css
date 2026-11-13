@@ -43,3 +43,12 @@
  .smsSearch input{flex:1;width:auto;min-width:0}
  .smsTableTop{align-items:flex-start}
 }
+
+/* Number allocation modal */
+.allocateOverlay{position:fixed;inset:0;z-index:30;background:#020a16b8;display:grid;place-items:center;padding:18px;backdrop-filter:blur(3px)}
+.allocateModal{width:min(100%,440px);background:#10243c;border:1px solid #365779;border-radius:14px;padding:23px;box-shadow:0 24px 70px #0009;color:#f4f7fc}
+.allocateModal h2{font-size:19px;margin:0 0 6px}.allocateCount{font-size:12px;color:#91a6bf;margin:0 0 20px}
+.allocateModal label{display:grid;gap:7px;margin:0 0 14px;color:#c5d3e5;font-size:12px;font-weight:700}
+.allocateModal select,.allocateModal input{height:42px;width:100%;background:#091a2e;border:1px solid #315477;border-radius:7px;color:#fff;padding:0 11px;outline:none}
+.allocateModal select:focus,.allocateModal input:focus{border-color:#2688f5;box-shadow:0 0 0 3px #1679eb20}
+.allocateButtons{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}.allocateButtons button{border:0;border-radius:7px;padding:10px 20px;font-weight:700;cursor:pointer;color:#fff}.allocateClose{background:#53657a}.allocateSubmit{background:#1679eb}
