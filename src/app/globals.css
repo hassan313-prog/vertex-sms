@@ -4,3 +4,42 @@
 @media(max-width:900px){.mainContent{padding:24px 18px}.profileGrid{grid-template-columns:1fr}.metricCard{padding:18px 14px}.metricIcon{width:56px;height:56px}}
 @media(max-width:600px){.topbar{height:68px;padding:0 12px}.leftHead,.rightHead{gap:8px}.compact{font-size:14px;gap:7px}.compact .brandMark{width:29px;height:29px;font-size:18px}.headIcon,.avatarButton{width:33px;height:33px}.mainContent{padding:20px 13px}.pageHeading h1{font-size:24px}.totals{gap:35px}.metricGrid{grid-template-columns:1fr}.metricCard{min-height:112px}.profileCard{padding:17px 14px}.sidebar{width:50vw;padding:12px 7px}.navItem{font-size:10px;gap:5px;padding:10px 4px}.navIcon{width:15px;flex-basis:15px;font-size:13px}.subNav{margin-left:15px;padding-left:5px}.subNav button{font-size:9px;padding:8px 3px}.quick{gap:4px}.quick button{width:27px;height:28px;font-size:12px}.userBlock b{font-size:10px}.userBlock small{font-size:9px}.bigAvatar{width:43px;height:43px;font-size:18px}}
 @media(max-width:380px){.compact>span:last-child{display:none}.rightHead{gap:5px}.captchaBox{padding:9px}.loginCard{padding:28px 22px 22px}}
+/* Vertex SMS refinements */
+.brandVertex{color:#fff}
+.navItem{font-size:15px;padding:13px 10px;gap:10px}
+.subNav button{font-size:13px;padding:10px 6px}
+.smsActionRow{display:flex;align-items:center;gap:9px;margin:-7px 0 14px}
+.smsActionRow button{border:0;border-radius:7px;padding:8px 12px;color:#fff;font-weight:800;cursor:pointer}
+.smsSelectAll{background:#1679eb}.smsDeselect{background:#d94255}
+.smsSelectedCount{color:#91a6bf;font-size:12px;margin-left:4px}
+.smsFilterCard,.smsTableCard{background:rgba(13,29,50,.96);border:1px solid #294a70;border-radius:11px;padding:16px;margin-bottom:15px;box-shadow:0 8px 24px #0002}
+.smsFilterGrid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:12px}
+.smsFilterGrid label{display:grid;gap:6px;color:#c5d3e5;font-size:12px;font-weight:700}
+.smsFilterGrid select,.smsShowEntries select,.smsSearch input{height:37px;background:#091a2e;border:1px solid #315477;border-radius:7px;color:#f4f7fc;padding:0 10px;outline:none}
+.smsFilterGrid select:focus,.smsSearch input:focus{border-color:#2688f5}
+.smsTableTop{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;color:#c3d1e2;font-size:12px}
+.smsShowEntries select{height:31px;margin:0 4px}
+.smsSearch{display:flex;align-items:center;gap:8px;margin-left:auto}
+.smsSearch input{width:190px;height:34px}
+.smsExportRow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.smsExportRow button{background:#1679eb;color:#fff;border:0;border-radius:6px;padding:8px 13px;font-size:12px;font-weight:700;cursor:pointer}
+.smsExportRow button:hover,.smsActionRow button:hover{filter:brightness(1.12)}
+.smsTableScroll{width:100%;overflow-x:auto;border:1px solid #294a70;border-radius:8px}
+.smsTable{width:100%;min-width:850px;border-collapse:collapse;font-size:12px;color:#eaf2fc}
+.smsTable th{background:#12365b;color:#fff;text-align:left;padding:12px 11px;white-space:nowrap;font-size:11px;letter-spacing:.35px}
+.smsTable td{padding:11px;border-top:1px solid #213d5b;white-space:nowrap}
+.smsTable tbody tr:nth-child(even){background:#10243c}
+.smsTable tbody tr:nth-child(odd){background:#0b1b30}
+.smsTable input[type=checkbox]{width:15px;height:15px;accent-color:#1679eb;cursor:pointer}
+.smsNumber{color:#8fc5ff;font-weight:700}
+.smsEmpty{text-align:center;color:#8ea6c0;padding:25px!important}
+.smsTableFoot{font-size:11px;color:#8ea6c0;margin-top:12px}
+.smsDemoNote{font-size:10px;color:#718ba8;margin:9px 0 0}
+@media(max-width:600px){
+ .navItem{font-size:12px;gap:5px;padding:11px 5px}
+ .subNav button{font-size:11px;padding:9px 4px}
+ .smsFilterCard,.smsTableCard{padding:12px}
+ .smsSearch{width:100%;margin-left:0}
+ .smsSearch input{flex:1;width:auto;min-width:0}
+ .smsTableTop{align-items:flex-start}
+}
