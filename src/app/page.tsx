@@ -3,10 +3,25 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createClient, type User } from "@supabase/supabase-js";
 
+type SmsRow = { id:number; range:string; prefix:string; number:string; myPayout:string; manager:string; payout:string; limits:string; client:string; assigned:boolean };
 type Profile = { display_name?: string; role?: string; avatar_url?: string; contact_no?: string; skype_id?: string; company_name?: string; address?: string; country?: string; server_ip?: string };
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
 const supabase = url && key ? createClient(url, key) : null;
+const demoSmsRows: SmsRow[] = [
+  {id:1,range:"USA",prefix:"+1",number:"+1 202-555-0101",myPayout:"$0.025",manager:"—",payout:"$0.020",limits:"1 / 5",client:"Unassigned",assigned:false},
+  {id:2,range:"USA",prefix:"+1",number:"+1 202-555-0102",myPayout:"$0.025",manager:"—",payout:"$0.020",limits:"0 / 5",client:"Unassigned",assigned:false},
+  {id:3,range:"USA",prefix:"+1",number:"+1 202-555-0103",myPayout:"$0.030",manager:"Manager A",payout:"$0.022",limits:"3 / 5",client:"Client A",assigned:true},
+  {id:4,range:"UK",prefix:"+44",number:"+44 7700 900001",myPayout:"$0.035",manager:"Manager B",payout:"$0.028",limits:"2 / 5",client:"Client B",assigned:true},
+  {id:5,range:"UK",prefix:"+44",number:"+44 7700 900002",myPayout:"$0.035",manager:"—",payout:"$0.028",limits:"0 / 5",client:"Unassigned",assigned:false},
+  {id:6,range:"India",prefix:"+91",number:"+91 XXXXX 10001",myPayout:"$0.018",manager:"Manager A",payout:"$0.014",limits:"1 / 3",client:"Client A",assigned:true},
+  {id:7,range:"India",prefix:"+91",number:"+91 XXXXX 10002",myPayout:"$0.018",manager:"—",payout:"$0.014",limits:"0 / 3",client:"Unassigned",assigned:false},
+  {id:8,range:"Canada",prefix:"+1",number:"+1 416-555-0101",myPayout:"$0.030",manager:"Manager C",payout:"$0.024",limits:"4 / 5",client:"Client C",assigned:true},
+  {id:9,range:"Australia",prefix:"+61",number:"+61 490 000 101",myPayout:"$0.040",manager:"—",payout:"$0.032",limits:"0 / 5",client:"Unassigned",assigned:false},
+  {id:10,range:"Germany",prefix:"+49",number:"+49 151 0000 0101",myPayout:"$0.038",manager:"Manager B",payout:"$0.030",limits:"2 / 5",client:"Client B",assigned:true},
+  {id:11,range:"France",prefix:"+33",number:"+33 6 00 00 01 01",myPayout:"$0.036",manager:"—",payout:"$0.029",limits:"0 / 5",client:"Unassigned",assigned:false},
+  {id:12,range:"Pakistan",prefix:"+92",number:"+92 300 0000101",myPayout:"$0.020",manager:"Manager C",payout:"$0.016",limits:"1 / 4",client:"Client C",assigned:true}
+];
 const blank: Profile = { display_name: "", contact_no: "", skype_id: "", company_name: "", address: "", country: "", server_ip: "" };
 const menus = [
   ["Dashboard", "▦"],
@@ -47,8 +62,53 @@ export default function Home() {
   const dark = true;
   const [pop, setPop] = useState("");
   const [show, setShow] = useState(false);
+  const [smsRows] = useState<SmsRow[]>(demoSmsRows);
+  const [selectedSms, setSelectedSms] = useState<number[]>([]);
+  const [smsRange, setSmsRange] = useState("All Ranges");
+  const [smsClient, setSmsClient] = useState("All Clients");
+  const [smsAssignment, setSmsAssignment] = useState("All Numbers");
+  const [appliedRange, setAppliedRange] = useState("All Ranges");
+  const [appliedClient, setAppliedClient] = useState("All Clients");
+  const [appliedAssignment, setAppliedAssignment] = useState("All Numbers");
+  const [smsSearch, setSmsSearch] = useState("");
+  const [pageSize, setPageSize] = useState(25);
 
   const t = words[language] || words.English;
+  const filteredSms = smsRows.filter(row =>
+    (appliedRange === "All Ranges" || row.range === appliedRange) &&
+    (appliedClient === "All Clients" || row.client === appliedClient) &&
+    (appliedAssignment === "All Numbers" || (appliedAssignment === "Assigned" ? row.assigned : !row.assigned)) &&
+    [row.range,row.prefix,row.number,row.myPayout,row.manager,row.payout,row.limits,row.client].some(v => v.toLowerCase().includes(smsSearch.toLowerCase()))
+  );
+  const visibleSms = filteredSms.slice(0, pageSize);
+  function toggleSms(id:number) { setSelectedSms(old => old.includes(id) ? old.filter(x => x !== id) : [...old,id]); }
+  function smsExportRows() { return filteredSms.map(r => [r.range,r.prefix,r.number,r.myPayout,r.manager,r.payout,r.limits]); }
+  function downloadSms(name:string, content:string, type:string) {
+    const blob = new Blob([content], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
+  }
+  function exportSmsCsv() {
+    const rows = [["RANGE","PREFIX","NUMBER","MY PAYOUT","Manager","Payout","Limits"],...smsExportRows()];
+    downloadSms("sms-numbers.csv", rows.map(row => row.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(",")).join("\\n"), "text/csv;charset=utf-8");
+  }
+  function exportSmsExcel() {
+    const headers = ["RANGE","PREFIX","NUMBER","MY PAYOUT","Manager","Payout","Limits"];
+    const table = "<table><tr>" + headers.map(x=>"<th>"+x+"</th>").join("") + "</tr>" + smsExportRows().map(row=>"<tr>"+row.map(v=>"<td>"+String(v)+"</td>").join("")+"</tr>").join("") + "</table>";
+    downloadSms("sms-numbers.xls", "<html><meta charset='utf-8'><body>"+table+"</body></html>", "application/vnd.ms-excel");
+  }
+  async function copySms() {
+    const rows = [["RANGE","PREFIX","NUMBER","MY PAYOUT","Manager","Payout","Limits"],...smsExportRows()];
+    await navigator.clipboard.writeText(rows.map(r=>r.join("\\t")).join("\\n"));
+    setSuccess("SMS numbers copied to clipboard."); setTimeout(()=>setSuccess(""),2500);
+  }
+  function printSms() {
+    const headers=["RANGE","PREFIX","NUMBER","MY PAYOUT","Manager","Payout","Limits"];
+    const w=window.open("","_blank","width=1000,height=700");
+    if(!w) return;
+    w.document.write("<html><head><title>SMS Numbers</title><style>body{font:12px Arial;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #bbb;padding:8px;text-align:left}th{background:#dce8f7}</style></head><body><h2>SMS Numbers</h2><table><tr>"+headers.map(x=>"<th>"+x+"</th>").join("")+"</tr>"+smsExportRows().map(row=>"<tr>"+row.map(v=>"<td>"+String(v)+"</td>").join("")+"</tr>").join("")+"</table></body></html>");
+    w.document.close(); w.focus(); w.print();
+  }
   const panel = dark ? "#0b1e35" : "#fff";
   const ink = dark ? "#f4f7fc" : "#17263b";
   const border = dark ? "#294363" : "#d9e1ec";
@@ -150,7 +210,7 @@ export default function Home() {
 
   return <main className="appShell" style={{ background: dark ? "#06172b" : "#f2f5fa", color: ink }}>
     <header className="topbar" style={{ background: panel, borderColor: border }}>
-      <div className="leftHead"><button className="hamburger" aria-label="Open menu" onClick={() => setDrawer(true)}><span/><span/><span/></button><div className="brand compact"><span className="brandMark">V</span><span>VERTEX <b>SMS</b></span></div></div>
+      <div className="leftHead"><button className="hamburger" aria-label="Open menu" onClick={() => setDrawer(true)}><span/><span/><span/></button><div className="brand compact"><span className="brandMark">V</span><span><span className="brandVertex">VERTEX</span> <b>SMS</b></span></div></div>
       <div className="rightHead">
         <div className="headControl"><button className="headIcon" title="Language" onClick={() => setPop(pop === "language" ? "" : "language")}>文</button>{pop === "language" && <div className="popup">{["English","Urdu","Hindi"].map(x => <button key={x} onClick={() => { setLanguage(x); setPop(""); }}>{x}</button>)}</div>}</div>
         <div className="headControl"><button className="headIcon" title="Theme: Dark only" aria-label="Theme: Dark only">◐</button></div>
@@ -196,6 +256,35 @@ export default function Home() {
             { icon:"▣", name:t[9], label:"Estimated", value:"99.9467%", color:"#18aa81" }
           ].map(card => <article className="metricCard" key={card.name} style={{ background:panel, borderColor:border }}><div className="metricIcon" style={{ background:card.color }}>{card.icon}</div><div className="metricBody"><b>{card.name}</b><div><span>{card.label}</span><strong>{card.value}</strong></div>{card.value2 && <div><span>{card.label2}</span><strong>{card.value2}</strong></div>}</div></article>)}
         </div>
+      </> : page === "SMS Numbers" ? <>
+        <div className="smsActionRow">
+          <button className="smsSelectAll" onClick={()=>setSelectedSms(filteredSms.map(r=>r.id))}>✓ <span>Select All</span></button>
+          <button className="smsDeselect" onClick={()=>setSelectedSms([])}>✕ <span>Deselect</span></button>
+          <span className="smsSelectedCount">{selectedSms.length} selected</span>
+        </div>
+        <section className="smsFilterCard">
+          <div className="smsFilterGrid">
+            <label>Select Range<select value={smsRange} onChange={e=>setSmsRange(e.target.value)}><option>All Ranges</option>{Array.from(new Set(smsRows.map(r=>r.range))).map(x=><option key={x}>{x}</option>)}</select></label>
+            <label>Select Client<select value={smsClient} onChange={e=>setSmsClient(e.target.value)}><option>All Clients</option><option>Unassigned</option>{Array.from(new Set(smsRows.filter(r=>r.assigned).map(r=>r.client))).map(x=><option key={x}>{x}</option>)}</select></label>
+            <label>All Numbers<select value={smsAssignment} onChange={e=>setSmsAssignment(e.target.value)}><option>All Numbers</option><option>Assigned</option><option>Unassigned</option></select></label>
+          </div>
+          <button className="blueButton" onClick={()=>{setAppliedRange(smsRange);setAppliedClient(smsClient);setAppliedAssignment(smsAssignment);setSelectedSms([]);}}>Filter</button>
+        </section>
+        <section className="smsTableCard">
+          <div className="smsTableTop">
+            <label className="smsShowEntries">Show <select value={pageSize} onChange={e=>setPageSize(Number(e.target.value))}><option value={10}>10</option><option value={25}>25</option><option value={50}>50</option><option value={100}>100</option></select> entries</label>
+            <label className="smsSearch">Search: <input value={smsSearch} onChange={e=>setSmsSearch(e.target.value)} placeholder="Search numbers..." /></label>
+          </div>
+          <div className="smsExportRow">
+            <button onClick={copySms}>Copy</button><button onClick={exportSmsCsv}>CSV</button><button onClick={exportSmsExcel}>Excel</button><button onClick={printSms}>PDF</button><button onClick={printSms}>Print</button>
+          </div>
+          <div className="smsTableScroll"><table className="smsTable"><thead><tr><th><input type="checkbox" aria-label="Select visible rows" checked={visibleSms.length>0 && visibleSms.every(r=>selectedSms.includes(r.id))} onChange={e=>setSelectedSms(e.target.checked ? Array.from(new Set([...selectedSms,...visibleSms.map(r=>r.id)])) : selectedSms.filter(id=>!visibleSms.some(r=>r.id===id)))}/></th><th>RANGE</th><th>PREFIX</th><th>NUMBER</th><th>MY PAYOUT</th><th>Manager</th><th>Payout</th><th>Limits</th></tr></thead>
+            <tbody>{visibleSms.map(row=><tr key={row.id}><td><input type="checkbox" aria-label={"Select "+row.number} checked={selectedSms.includes(row.id)} onChange={()=>toggleSms(row.id)}/></td><td>{row.range}</td><td>{row.prefix}</td><td className="smsNumber">{row.number}</td><td>{row.myPayout}</td><td>{row.manager}</td><td>{row.payout}</td><td>{row.limits}</td></tr>)}
+              {visibleSms.length===0 && <tr><td colSpan={8} className="smsEmpty">No matching numbers found.</td></tr>}
+            </tbody></table></div>
+          <div className="smsTableFoot">Showing {visibleSms.length ? 1 : 0} to {visibleSms.length} of {filteredSms.length} entries</div>
+          <p className="smsDemoNote">Demo entries shown — live SMS inventory database connection is pending.</p>
+        </section>
       </> : <div className="placeholderCard" style={{ background:panel, borderColor:border }}><h2>{page}</h2><p className="muted">Module integration is coming next.</p></div>}
       <footer className="appFooter">Copyright © 2026 VERTEX SMS.</footer>
     </section>
