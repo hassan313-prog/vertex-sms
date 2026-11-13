@@ -3,25 +3,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createClient, type User } from "@supabase/supabase-js";
 
-type SmsRow = { id:number; range:string; prefix:string; number:string; myPayout:string; manager:string; payout:string; limits:string; client:string; assigned:boolean };
+type SmsRow = { id:number; range:string; prefix:string; number:string; myPayout:string; manager:string; payout:string; limits:string; client:string; assigned:boolean; managerId:string|null };
+type ManagerOption = { id:string; display_name:string };
 type Profile = { display_name?: string; role?: string; avatar_url?: string; contact_no?: string; skype_id?: string; company_name?: string; address?: string; country?: string; server_ip?: string };
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
 const supabase = url && key ? createClient(url, key) : null;
-const demoSmsRows: SmsRow[] = [
-  {id:1,range:"USA",prefix:"+1",number:"+1 202-555-0101",myPayout:"$0.025",manager:"—",payout:"$0.020",limits:"1 / 5",client:"Unassigned",assigned:false},
-  {id:2,range:"USA",prefix:"+1",number:"+1 202-555-0102",myPayout:"$0.025",manager:"—",payout:"$0.020",limits:"0 / 5",client:"Unassigned",assigned:false},
-  {id:3,range:"USA",prefix:"+1",number:"+1 202-555-0103",myPayout:"$0.030",manager:"Manager A",payout:"$0.022",limits:"3 / 5",client:"Client A",assigned:true},
-  {id:4,range:"UK",prefix:"+44",number:"+44 7700 900001",myPayout:"$0.035",manager:"Manager B",payout:"$0.028",limits:"2 / 5",client:"Client B",assigned:true},
-  {id:5,range:"UK",prefix:"+44",number:"+44 7700 900002",myPayout:"$0.035",manager:"—",payout:"$0.028",limits:"0 / 5",client:"Unassigned",assigned:false},
-  {id:6,range:"India",prefix:"+91",number:"+91 XXXXX 10001",myPayout:"$0.018",manager:"Manager A",payout:"$0.014",limits:"1 / 3",client:"Client A",assigned:true},
-  {id:7,range:"India",prefix:"+91",number:"+91 XXXXX 10002",myPayout:"$0.018",manager:"—",payout:"$0.014",limits:"0 / 3",client:"Unassigned",assigned:false},
-  {id:8,range:"Canada",prefix:"+1",number:"+1 416-555-0101",myPayout:"$0.030",manager:"Manager C",payout:"$0.024",limits:"4 / 5",client:"Client C",assigned:true},
-  {id:9,range:"Australia",prefix:"+61",number:"+61 490 000 101",myPayout:"$0.040",manager:"—",payout:"$0.032",limits:"0 / 5",client:"Unassigned",assigned:false},
-  {id:10,range:"Germany",prefix:"+49",number:"+49 151 0000 0101",myPayout:"$0.038",manager:"Manager B",payout:"$0.030",limits:"2 / 5",client:"Client B",assigned:true},
-  {id:11,range:"France",prefix:"+33",number:"+33 6 00 00 01 01",myPayout:"$0.036",manager:"—",payout:"$0.029",limits:"0 / 5",client:"Unassigned",assigned:false},
-  {id:12,range:"Pakistan",prefix:"+92",number:"+92 300 0000101",myPayout:"$0.020",manager:"Manager C",payout:"$0.016",limits:"1 / 4",client:"Client C",assigned:true}
-];
 const blank: Profile = { display_name: "", contact_no: "", skype_id: "", company_name: "", address: "", country: "", server_ip: "" };
 const menus = [
   ["Dashboard", "▦"],
@@ -62,7 +49,8 @@ export default function Home() {
   const dark = true;
   const [pop, setPop] = useState("");
   const [show, setShow] = useState(false);
-  const [smsRows, setSmsRows] = useState<SmsRow[]>(demoSmsRows);
+  const [smsRows, setSmsRows] = useState<SmsRow[]>([]);
+  const [smsManagers, setSmsManagers] = useState<ManagerOption[]>([]);
   const [allocateOpen, setAllocateOpen] = useState(false);
   const [allocateManager, setAllocateManager] = useState("");
   const [allocatePayterm, setAllocatePayterm] = useState("Daily");
@@ -125,18 +113,55 @@ export default function Home() {
     setEmail(active.email || "");
   }
 
+  async function loadSmsInventory(active: User) {
+    if (!supabase) return;
+    const { data: managerData, error: managerError } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .eq("role", "manager")
+      .order("display_name", { ascending: true });
+    if (managerError) { setError("Could not load managers: " + managerError.message); return; }
+    const managers = (managerData || []) as ManagerOption[];
+    setSmsManagers(managers);
+    const managerNames = new Map(managers.map(item => [item.id, item.display_name || "Manager"]));
+    const allRows: any[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase
+        .from("number_inventory")
+        .select("id, range_name, prefix, phone_number, my_payout, payterm, client, client_payout, limits, manager_id")
+        .order("id", { ascending: true })
+        .range(from, from + 999);
+      if (error) { setError("Could not load SMS numbers: " + error.message); return; }
+      allRows.push(...(data || []));
+      if (!data || data.length < 1000) break;
+    }
+    setSmsRows(allRows.map(row => ({
+      id: Number(row.id),
+      range: row.range_name || "",
+      prefix: row.prefix || "—",
+      number: row.phone_number || "",
+      myPayout: (row.payterm ? row.payterm + " " : "") + "$" + Number(row.my_payout || 0).toFixed(3),
+      manager: row.manager_id ? (managerNames.get(row.manager_id) || "Manager") : "—",
+      payout: row.client_payout == null ? "—" : "$" + Number(row.client_payout).toFixed(3),
+      limits: row.limits || "—",
+      client: row.client || "Unassigned",
+      assigned: Boolean(row.manager_id || row.client),
+      managerId: row.manager_id || null
+    })));
+  }
+
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getSession().then(({ data }) => {
       const active = data.session?.user || null;
       setUser(active);
-      if (active) loadProfile(active);
+      if (active) { loadProfile(active); loadSmsInventory(active); }
     });
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       const active = session?.user || null;
       setUser(active);
-      if (active) loadProfile(active);
-      else { setProfile({}); setForm(blank); setPage("Dashboard"); }
+      if (active) { loadProfile(active); loadSmsInventory(active); }
+      else { setProfile({}); setForm(blank); setSmsRows([]); setSmsManagers([]); setPage("Dashboard"); }
     });
     return () => data.subscription.unsubscribe();
   }, []);
@@ -287,8 +312,8 @@ export default function Home() {
               {visibleSms.length===0 && <tr><td colSpan={8} className="smsEmpty">No matching numbers found.</td></tr>}
             </tbody></table></div>
           <div className="smsTableFoot">Showing {visibleSms.length ? 1 : 0} to {visibleSms.length} of {filteredSms.length} entries</div>
-          <p className="smsDemoNote">Demo entries shown — live SMS inventory database connection is pending.</p>
-        {allocateOpen && <div className="allocateOverlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setAllocateOpen(false);}}><section className="allocateModal" role="dialog" aria-modal="true" aria-labelledby="allocateTitle"><h2 id="allocateTitle">Allocate All Numbers</h2><p className="allocateCount">{selectedSms.length} numbers selected</p><label>Select Manager<select value={allocateManager} onChange={e=>setAllocateManager(e.target.value)}><option value="">Please Select</option><option>Manager A</option><option>Manager B</option><option>Manager C</option></select></label><label>Payterm<select value={allocatePayterm} onChange={e=>setAllocatePayterm(e.target.value)}><option>Daily</option><option>Weekly 7</option><option>Monthly 30</option></select></label><label>Payout<input type="number" min="0" step="0.0001" value={allocatePayout} onChange={e=>setAllocatePayout(e.target.value)} /></label><div className="allocateButtons"><button type="button" className="allocateClose" onClick={()=>setAllocateOpen(false)}>Close</button><button type="button" className="allocateSubmit" onClick={()=>{if(!allocateManager){setError("Please select a manager.");return;}if(allocatePayout.trim()==="" || Number(allocatePayout)<0){setError("Please enter a valid payout.");return;}setSmsRows(old=>old.map(row=>selectedSms.includes(row.id)?{...row,manager:allocateManager,client:allocateManager,assigned:true,payout:"$"+Number(allocatePayout).toFixed(4)}:row));setSelectedSms([]);setAllocateOpen(false);setSuccess("Selected demo numbers allocated to "+allocateManager+".");setTimeout(()=>setSuccess(""),3000);}}>Allocate</button></div></section></div>}
+          <p className="smsDemoNote">Live inventory · {smsRows.length.toLocaleString()} numbers loaded from your Excel file.</p>
+        {allocateOpen && <div className="allocateOverlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setAllocateOpen(false);}}><section className="allocateModal" role="dialog" aria-modal="true" aria-labelledby="allocateTitle"><h2 id="allocateTitle">Allocate All Numbers</h2><p className="allocateCount">{selectedSms.length} numbers selected</p><label>Select Manager<select value={allocateManager} onChange={e=>setAllocateManager(e.target.value)}><option value="">Please Select</option>{smsManagers.map(manager=><option key={manager.id} value={manager.id}>{manager.display_name || "Manager"}</option>)}</select>{smsManagers.length===0 && <small className="muted">No managers added yet.</small>}</label><label>Payterm<select value={allocatePayterm} onChange={e=>setAllocatePayterm(e.target.value)}><option>Daily</option><option>Weekly 7</option><option>Monthly 30</option></select></label><label>Payout<input type="number" min="0" step="0.0001" value={allocatePayout} onChange={e=>setAllocatePayout(e.target.value)} /></label><div className="allocateButtons"><button type="button" className="allocateClose" onClick={()=>setAllocateOpen(false)}>Close</button><button type="button" className="allocateSubmit" onClick={async()=>{if(!allocateManager){setError("Please select a manager.");return;}if(allocatePayout.trim()==="" || Number(allocatePayout)<0){setError("Please enter a valid payout.");return;}if(!supabase){setError("Database connection is unavailable.");return;}setBusy(true);const manager=smsManagers.find(item=>item.id===allocateManager);const {error:allocationError}=await supabase.from("number_inventory").update({manager_id:allocateManager,client:manager?.display_name || null,payterm:allocatePayterm,client_payout:Number(allocatePayout),sell_price:Number(allocatePayout)}).in("id",selectedSms);if(allocationError){setError("Allocation failed: "+allocationError.message);setBusy(false);return;}if(user) await loadSmsInventory(user);setSelectedSms([]);setAllocateOpen(false);setSuccess("Selected numbers allocated to "+(manager?.display_name || "manager")+".");setTimeout(()=>setSuccess(""),3000);setBusy(false);}}>Allocate</button></div></section></div>}
         </section>
       </> : <div className="placeholderCard" style={{ background:panel, borderColor:border }}><h2>{page}</h2><p className="muted">Module integration is coming next.</p></div>}
       <footer className="appFooter">Copyright © 2026 VERTEX SMS.</footer>
