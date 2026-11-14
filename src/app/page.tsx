@@ -5,6 +5,7 @@ import { createClient, type User } from "@supabase/supabase-js";
 
 type SmsRow = { id:number; range:string; prefix:string; number:string; myPayout:string; manager:string; payout:string; limits:string; client:string; assigned:boolean; managerId:string|null };
 type ManagerOption = { id:string; display_name:string };
+type RateRow = { id:number; range_name:string; currency:string; payout_1_1:string; payout_7_1:string; payout_7_7:string };
 type Profile = { display_name?: string; role?: string; avatar_url?: string; contact_no?: string; skype_id?: string; company_name?: string; address?: string; country?: string; server_ip?: string };
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
@@ -14,11 +15,16 @@ const menus = [
   ["Dashboard", "▦"],
   ["SMS Module", "▣", ["SMS Numbers", "SMS Ratecard", "Bulk Allocation", "Self Allocation"]],
   ["SMS Test Panel", "⌁"],
+  ["Clients", "♙"],
   ["Managers", "♙"],
   ["SMS Report & Stats", "▤", ["SMS Reports", "SMS Stats", "SMS Range Stats", "SMS Number Stats", "SMS Manager Stats"]],
   ["Payment Requests", "＄"],
   ["Statements", "▥", ["USD Statements", "EUR Statements", "GBP Statement"]],
-  ["CLI Search", "⌕"]
+  ["CLI Search", "⌕"],
+  ["CR API", "⌘"],
+  ["BOT AI/APIs", "◉"],
+  ["API Keys", "⌑"],
+  ["Support", "?" ]
 ] as const;
 const words: Record<string, string[]> = {
   English: ["Hi, Welcome back!", "Dashboard", "EXPENSES", "PROFIT", "Today", "This Week", "SMS", "Gen. SMS", "Est. Revenue", "Delivery Rate"],
@@ -50,6 +56,9 @@ export default function Home() {
   const [pop, setPop] = useState("");
   const [show, setShow] = useState(false);
   const [smsRows, setSmsRows] = useState<SmsRow[]>([]);
+  const [rateRows, setRateRows] = useState<RateRow[]>([]);
+  const [rateSearch, setRateSearch] = useState("");
+  const [rateForm, setRateForm] = useState({ range_name:"", currency:"USD", payout_1_1:"NA", payout_7_1:"", payout_7_7:"NA" });
   const [smsManagers, setSmsManagers] = useState<ManagerOption[]>([]);
   const [allocateOpen, setAllocateOpen] = useState(false);
   const [allocateManager, setAllocateManager] = useState("");
@@ -113,6 +122,37 @@ export default function Home() {
     setEmail(active.email || "");
   }
 
+  async function loadRatecard() {
+    if (!supabase) return;
+    const { data, error } = await supabase.from("sms_ratecard").select("id,range_name,currency,payout_1_1,payout_7_1,payout_7_7").order("range_name", { ascending:true });
+    if (error) { setError("Could not load SMS RateCard: " + error.message); return; }
+    setRateRows((data || []) as RateRow[]);
+  }
+
+  async function addRateRange(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!supabase || !user) { setError("Please sign in to add a range."); return; }
+    const range = rateForm.range_name.trim();
+    if (!range) { setError("Range name is required."); return; }
+    setBusy(true); setError(""); setSuccess("");
+    const { error } = await supabase.from("sms_ratecard").insert({
+      range_name: range,
+      currency: rateForm.currency.trim() || "USD",
+      payout_1_1: rateForm.payout_1_1.trim() || "NA",
+      payout_7_1: rateForm.payout_7_1.trim() || "NA",
+      payout_7_7: rateForm.payout_7_7.trim() || "NA",
+      created_by: user.id
+    });
+    if (error) { setError(error.code === "23505" ? "This range already exists in the RateCard." : "Could not add range: " + error.message); setBusy(false); return; }
+    setRateForm({ range_name:"", currency:"USD", payout_1_1:"NA", payout_7_1:"", payout_7_7:"NA" });
+    await loadRatecard(); setSuccess("New operator range saved successfully."); setBusy(false);
+  }
+
+  function exportRatecard() {
+    const rows = [["RANGE","CURRENCY","1/1","7/1","7/7"], ...rateRows.filter(r => [r.range_name,r.currency,r.payout_1_1,r.payout_7_1,r.payout_7_7].some(v => String(v).toLowerCase().includes(rateSearch.toLowerCase()))).map(r => [r.range_name,r.currency,r.payout_1_1,r.payout_7_1,r.payout_7_7])];
+    downloadSms("vertex-ratecard.csv", rows.map(row => row.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\\n"), "text/csv;charset=utf-8");
+  }
+
   async function loadSmsInventory(active: User) {
     if (!supabase) return;
     const { data: managerData, error: managerError } = await supabase
@@ -155,13 +195,13 @@ export default function Home() {
     supabase.auth.getSession().then(({ data }) => {
       const active = data.session?.user || null;
       setUser(active);
-      if (active) { loadProfile(active); loadSmsInventory(active); }
+      if (active) { loadProfile(active); loadSmsInventory(active); loadRatecard(); }
     });
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       const active = session?.user || null;
       setUser(active);
-      if (active) { loadProfile(active); loadSmsInventory(active); }
-      else { setProfile({}); setForm(blank); setSmsRows([]); setSmsManagers([]); setPage("Dashboard"); }
+      if (active) { loadProfile(active); loadSmsInventory(active); loadRatecard(); }
+      else { setProfile({}); setForm(blank); setSmsRows([]); setSmsManagers([]); setRateRows([]); setPage("Dashboard"); }
     });
     return () => data.subscription.unsubscribe();
   }, []);
@@ -315,6 +355,38 @@ export default function Home() {
           <p className="smsDemoNote">Live inventory · {smsRows.length.toLocaleString()} numbers loaded from your Excel file.</p>
         {allocateOpen && <div className="allocateOverlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setAllocateOpen(false);}}><section className="allocateModal" role="dialog" aria-modal="true" aria-labelledby="allocateTitle"><h2 id="allocateTitle">Allocate All Numbers</h2><p className="allocateCount">{selectedSms.length} numbers selected</p><label>Select Manager<select value={allocateManager} onChange={e=>setAllocateManager(e.target.value)}><option value="">Please Select</option>{smsManagers.map(manager=><option key={manager.id} value={manager.id}>{manager.display_name || "Manager"}</option>)}</select>{smsManagers.length===0 && <small className="muted">No managers added yet.</small>}</label><label>Payterm<select value={allocatePayterm} onChange={e=>setAllocatePayterm(e.target.value)}><option>Daily</option><option>Weekly 7</option><option>Monthly 30</option></select></label><label>Payout<input type="number" min="0" step="0.0001" value={allocatePayout} onChange={e=>setAllocatePayout(e.target.value)} /></label><div className="allocateButtons"><button type="button" className="allocateClose" onClick={()=>setAllocateOpen(false)}>Close</button><button type="button" className="allocateSubmit" onClick={async()=>{if(!allocateManager){setError("Please select a manager.");return;}if(allocatePayout.trim()==="" || Number(allocatePayout)<0){setError("Please enter a valid payout.");return;}if(!supabase){setError("Database connection is unavailable.");return;}setBusy(true);const manager=smsManagers.find(item=>item.id===allocateManager);const {error:allocationError}=await supabase.from("number_inventory").update({manager_id:allocateManager,client:manager?.display_name || null,payterm:allocatePayterm,client_payout:Number(allocatePayout),sell_price:Number(allocatePayout)}).in("id",selectedSms);if(allocationError){setError("Allocation failed: "+allocationError.message);setBusy(false);return;}if(user) await loadSmsInventory(user);setSelectedSms([]);setAllocateOpen(false);setSuccess("Selected numbers allocated to "+(manager?.display_name || "manager")+".");setTimeout(()=>setSuccess(""),3000);setBusy(false);}}>Allocate</button></div></section></div>}
         </section>
+      </> : page === "SMS Ratecard" ? <>
+        <div className="rateTop"><div><p className="muted">SMS Module &gt; SMS RateCard</p><span className="rateCount">{rateRows.length} operator ranges</span></div><button className="blueButton" type="button" onClick={exportRatecard}>Export CSV</button></div>
+        <section className="smsTableCard">
+          <div className="smsTableTop"><label className="smsSearch">Search: <input value={rateSearch} onChange={e=>setRateSearch(e.target.value)} placeholder="Search range..." /></label><div className="rateTools"><button onClick={async()=>{const txt=[["RANGE","CURRENCY","1/1","7/1","7/7"],...rateRows.map(r=>[r.range_name,r.currency,r.payout_1_1,r.payout_7_1,r.payout_7_7])].map(r=>r.join("\\t")).join("\\n");await navigator.clipboard.writeText(txt);setSuccess("RateCard copied.");}}>Copy</button><button onClick={()=>window.print()}>PDF / Print</button></div></div>
+          <div className="smsTableScroll"><table className="smsTable rateTable"><thead><tr><th>RANGE</th><th>CURRENCY</th><th>1/1</th><th>7/1</th><th>7/7</th></tr></thead><tbody>
+            {rateRows.filter(r=>[r.range_name,r.currency,r.payout_1_1,r.payout_7_1,r.payout_7_7].some(v=>String(v).toLowerCase().includes(rateSearch.toLowerCase()))).map(r=><tr key={r.id}><td>{r.range_name}</td><td>{r.currency}</td><td className={r.payout_1_1==="NA"?"rateNA":""}>{r.payout_1_1==="NA"?"NA":"$"+r.payout_1_1}</td><td className={r.payout_7_1==="NA"?"rateNA":""}>{r.payout_7_1==="NA"?"NA":"$"+r.payout_7_1}</td><td className={r.payout_7_7==="NA"?"rateNA":""}>{r.payout_7_7==="NA"?"NA":"$"+r.payout_7_7}</td></tr>)}
+            {rateRows.length===0 && <tr><td colSpan={5} className="smsEmpty">No operator ranges have been added.</td></tr>}
+          </tbody></table></div>
+          <div className="smsTableFoot">Showing {rateRows.filter(r=>[r.range_name,r.currency,r.payout_1_1,r.payout_7_1,r.payout_7_7].some(v=>String(v).toLowerCase().includes(rateSearch.toLowerCase()))).length} of {rateRows.length} entries</div>
+        </section>
+        <section className="rateFormCard"><h2>＋ Add New Range</h2><p className="muted">Operator ki di hui range aur payout yahan save karein.</p>
+          <form className="rateForm" onSubmit={addRateRange}>
+            <label>Range<input required value={rateForm.range_name} onChange={e=>setRateForm(v=>({...v,range_name:e.target.value}))} placeholder="e.g. Pakistan-WhatsApp-1"/></label>
+            <label>Currency<input value={rateForm.currency} onChange={e=>setRateForm(v=>({...v,currency:e.target.value}))} placeholder="USD"/></label>
+            <label>Payout 1/1<input value={rateForm.payout_1_1} onChange={e=>setRateForm(v=>({...v,payout_1_1:e.target.value}))} placeholder="NA or 0.020"/></label>
+            <label>Payout 7/1<input value={rateForm.payout_7_1} onChange={e=>setRateForm(v=>({...v,payout_7_1:e.target.value}))} placeholder="0.012"/></label>
+            <label>Payout 7/7<input value={rateForm.payout_7_7} onChange={e=>setRateForm(v=>({...v,payout_7_7:e.target.value}))} placeholder="NA or 0.010"/></label>
+            <button className="blueButton" disabled={busy}>{busy?"Saving...":"+ Add Range"}</button>
+          </form>
+        </section>
+      </> : page === "SMS Test Panel" ? <>
+        <section className="rateFormCard"><h2>SMS Test Panel</h2><p className="muted">Provider connection is required before a real number or OTP can be requested.</p><div className="rateForm"><label>Country<select className="field"><option>Pakistan</option><option>Kyrgyzstan</option><option>Burundi</option><option>Zambia</option><option>Bosnia and Herzegovina</option></select></label><label>Service<select className="field"><option>WhatsApp</option><option>Telegram</option><option>Google</option><option>SMS</option></select></label></div><p className="moduleNotice">No test number is issued yet. This panel will use the connected SMS provider API.</p></section>
+      </> : page === "Clients" ? <>
+        <section className="rateFormCard"><h2>Clients</h2><p className="muted">Client accounts are managed through authenticated profiles.</p><p className="moduleNotice">Client list is being connected to role-based profile management. No sample client records are shown as real accounts.</p></section>
+      </> : page === "CR API" ? <>
+        <section className="rateFormCard"><h2>CR API</h2><p className="muted">API integration settings</p><p className="moduleNotice">API endpoint and authentication key are not configured yet. A live API key will be generated securely before use.</p></section>
+      </> : page === "BOT AI/APIs" ? <>
+        <section className="rateFormCard"><h2>BOT AI / APIs</h2><p className="moduleNotice">Telegram bot connection is not configured yet.</p></section>
+      </> : page === "API Keys" ? <>
+        <section className="rateFormCard"><h2>API Keys</h2><p className="moduleNotice">No API keys have been generated. Do not use demo keys from the sample HTML.</p></section>
+      </> : page === "Support" ? <>
+        <section className="rateFormCard"><h2>Support</h2><p className="moduleNotice">Support contact details can be added in the panel settings.</p></section>
       </> : <div className="placeholderCard" style={{ background:panel, borderColor:border }}><h2>{page}</h2><p className="muted">Module integration is coming next.</p></div>}
       <footer className="appFooter">Copyright © 2026 VERTEX SMS.</footer>
     </section>
