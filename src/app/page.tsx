@@ -91,7 +91,7 @@ export default function Home() {
   }
   function exportSmsCsv() {
     const rows = [["RANGE","PREFIX","NUMBER","MY PAYOUT","Manager","Payout","Limits"],...smsExportRows()];
-    downloadSms("sms-numbers.csv", rows.map(row => row.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(",")).join("\\n"), "text/csv;charset=utf-8");
+    downloadSms("sms-numbers.csv", rows.map(row => row.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(",")).join("\n"), "text/csv;charset=utf-8");
   }
   function exportSmsExcel() {
     const headers = ["RANGE","PREFIX","NUMBER","MY PAYOUT","Manager","Payout","Limits"];
@@ -100,7 +100,7 @@ export default function Home() {
   }
   async function copySms() {
     const rows = [["RANGE","PREFIX","NUMBER","MY PAYOUT","Manager","Payout","Limits"],...smsExportRows()];
-    await navigator.clipboard.writeText(rows.map(r=>r.join("\\t")).join("\\n"));
+    await navigator.clipboard.writeText(rows.map(r=>r.join("\t")).join("\n"));
     setSuccess("SMS numbers copied to clipboard."); setTimeout(()=>setSuccess(""),2500);
   }
   function printSms() {
@@ -150,7 +150,7 @@ export default function Home() {
 
   function exportRatecard() {
     const rows = [["RANGE","CURRENCY","1/1","7/1","7/7"], ...rateRows.filter(r => [r.range_name,r.currency,r.payout_1_1,r.payout_7_1,r.payout_7_7].some(v => String(v).toLowerCase().includes(rateSearch.toLowerCase()))).map(r => [r.range_name,r.currency,r.payout_1_1,r.payout_7_1,r.payout_7_7])];
-    downloadSms("vertex-ratecard.csv", rows.map(row => row.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\\n"), "text/csv;charset=utf-8");
+    downloadSms("vertex-ratecard.csv", rows.map(row => row.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\n"), "text/csv;charset=utf-8");
   }
 
   async function loadSmsInventory(active: User) {
@@ -358,7 +358,7 @@ export default function Home() {
       </> : page === "SMS Ratecard" ? <>
         <div className="rateTop"><div><p className="muted">SMS Module &gt; SMS RateCard</p><span className="rateCount">{rateRows.length} operator ranges</span></div><button className="blueButton" type="button" onClick={exportRatecard}>Export CSV</button></div>
         <section className="smsTableCard">
-          <div className="smsTableTop"><label className="smsSearch">Search: <input value={rateSearch} onChange={e=>setRateSearch(e.target.value)} placeholder="Search range..." /></label><div className="rateTools"><button onClick={async()=>{const txt=[["RANGE","CURRENCY","1/1","7/1","7/7"],...rateRows.map(r=>[r.range_name,r.currency,r.payout_1_1,r.payout_7_1,r.payout_7_7])].map(r=>r.join("\\t")).join("\\n");await navigator.clipboard.writeText(txt);setSuccess("RateCard copied.");}}>Copy</button><button onClick={()=>window.print()}>PDF / Print</button></div></div>
+          <div className="smsTableTop"><label className="smsSearch">Search: <input value={rateSearch} onChange={e=>setRateSearch(e.target.value)} placeholder="Search range..." /></label><div className="rateTools"><button onClick={async()=>{const txt=[["RANGE","CURRENCY","1/1","7/1","7/7"],...rateRows.map(r=>[r.range_name,r.currency,r.payout_1_1,r.payout_7_1,r.payout_7_7])].map(r=>r.join("\t")).join("\n");await navigator.clipboard.writeText(txt);setSuccess("RateCard copied.");}}>Copy</button><button onClick={()=>window.print()}>PDF / Print</button></div></div>
           <div className="smsTableScroll"><table className="smsTable rateTable"><thead><tr><th>RANGE</th><th>CURRENCY</th><th>1/1</th><th>7/1</th><th>7/7</th></tr></thead><tbody>
             {rateRows.filter(r=>[r.range_name,r.currency,r.payout_1_1,r.payout_7_1,r.payout_7_7].some(v=>String(v).toLowerCase().includes(rateSearch.toLowerCase()))).map(r=><tr key={r.id}><td>{r.range_name}</td><td>{r.currency}</td><td className={r.payout_1_1==="NA"?"rateNA":""}>{r.payout_1_1==="NA"?"NA":"$"+r.payout_1_1}</td><td className={r.payout_7_1==="NA"?"rateNA":""}>{r.payout_7_1==="NA"?"NA":"$"+r.payout_7_1}</td><td className={r.payout_7_7==="NA"?"rateNA":""}>{r.payout_7_7==="NA"?"NA":"$"+r.payout_7_7}</td></tr>)}
             {rateRows.length===0 && <tr><td colSpan={5} className="smsEmpty">No operator ranges have been added.</td></tr>}
