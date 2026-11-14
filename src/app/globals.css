@@ -52,3 +52,39 @@
 .allocateModal select,.allocateModal input{height:42px;width:100%;background:#091a2e;border:1px solid #315477;border-radius:7px;color:#fff;padding:0 11px;outline:none}
 .allocateModal select:focus,.allocateModal input:focus{border-color:#2688f5;box-shadow:0 0 0 3px #1679eb20}
 .allocateButtons{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}.allocateButtons button{border:0;border-radius:7px;padding:10px 20px;font-weight:700;cursor:pointer;color:#fff}.allocateClose{background:#53657a}.allocateSubmit{background:#1679eb}
+
+/* Global dark theme and RateCard module */
+:root{color-scheme:dark}
+html,body{background:#06172b;color:#f4f7fc}
+.loginShell{background:radial-gradient(circle at 18% 10%,#15385a 0,#0b1d32 36%,#06111f 78%);color:#f4f7fc}
+.loginCard{background:#0d2037;border:1px solid #294a70;box-shadow:0 25px 70px rgba(0,0,0,.6);color:#f4f7fc}
+.loginCard .brand,.loginCard h1{color:#f4f7fc}
+.loginSub{color:#9bb0c9}
+.loginCard form label,.fieldWrap label{color:#c5d3e5}
+.loginInput,.captchaBox input{background:#091a2e;border:1px solid #315477;color:#f4f7fc}
+.loginInput::placeholder,.captchaBox input::placeholder{color:#7189a5}
+.loginInput:focus,.captchaBox input:focus,.field:focus{border-color:#2688f5;box-shadow:0 0 0 3px #1679eb20}
+.captchaBox{background:#102943;border-color:#315477}
+.captchaBox small{color:#91a6bf}
+.captchaBox strong{color:#eaf2fc}
+.loginFooter{border-top-color:#294363;color:#91a6bf}
+.textButton{color:#69b5ff}
+.copyright{color:#91a6bf}
+select,option{color-scheme:dark}
+input,textarea,select{accent-color:#1679eb}
+.rateTop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.rateTop .muted{margin:0 0 5px}
+.rateCount{font-size:12px;color:#8ea6c0}
+.rateTools{display:flex;gap:7px;flex-wrap:wrap}
+.rateTools button{border:0;border-radius:6px;background:#1679eb;color:#fff;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.rateTable{min-width:650px}
+.rateNA{color:#e7c65c;font-weight:800}
+.rateFormCard{background:rgba(13,29,50,.96);border:1px solid #294a70;border-radius:11px;padding:20px;margin:15px 0;box-shadow:0 8px 24px #0002}
+.rateFormCard h2{font-size:18px;margin:0 0 8px;color:#f4f7fc}
+.rateForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.rateForm label{display:grid;gap:7px;color:#c5d3e5;font-size:12px;font-weight:700}
+.rateForm input,.rateForm select{width:100%;height:42px;background:#091a2e;border:1px solid #315477;border-radius:7px;color:#f4f7fc;padding:0 11px;outline:none}
+.rateForm input:focus,.rateForm select:focus{border-color:#2688f5;box-shadow:0 0 0 3px #1679eb20}
+.rateForm .blueButton{grid-column:1/-1;justify-self:start}
+.moduleNotice{margin:14px 0 0;padding:13px;border:1px solid #315477;border-radius:8px;background:#102943;color:#b8cbe0;font-size:12px;line-height:1.6}
+@media(max-width:600px){.rateTop{align-items:flex-start}.rateForm{grid-template-columns:1fr}.rateForm .blueButton{grid-column:1}}
