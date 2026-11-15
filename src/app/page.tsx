@@ -73,6 +73,12 @@ export default function Home() {
   const [appliedAssignment, setAppliedAssignment] = useState("All Numbers");
   const [smsSearch, setSmsSearch] = useState("");
   const [pageSize, setPageSize] = useState(25);
+  const [dashboardStats, setDashboardStats] = useState({
+    smsToday: 0, smsWeek: 0, genToday: 0, genWeek: 0,
+    expensesToday: 0, expensesWeek: 0, profitToday: 0, profitWeek: 0,
+    revenueToday: 0, revenueWeek: 0, deliveryRate: 0, loading: true
+  });
+
 
   const t = words[language] || words.English;
   const filteredSms = smsRows.filter(row =>
@@ -206,6 +212,63 @@ export default function Home() {
     return () => data.subscription.unsubscribe();
   }, []);
 
+
+  useEffect(() => {
+    if (!supabase || !user?.id) return;
+    let alive = true;
+    const refreshDashboard = async () => {
+      const now = new Date();
+      const startDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startWeek = new Date(startDay);
+      startWeek.setDate(startWeek.getDate() - ((startWeek.getDay() + 6) % 7));
+      const dayIso = startDay.toISOString();
+      const weekIso = startWeek.toISOString();
+      const [ordersResult, otpDay, otpWeek] = await Promise.all([
+        supabase.from("number_orders").select("id,price,status,created_at,inventory_id"),
+        supabase.from("otp_messages").select("id", { count: "exact", head: true }).gte("received_at", dayIso),
+        supabase.from("otp_messages").select("id", { count: "exact", head: true }).gte("received_at", weekIso)
+      ]);
+      if (!alive) return;
+      const orders = ordersResult.data || [];
+      const inventoryIds = [...new Set(orders.map((row: any) => row.inventory_id).filter((id: any) => id != null))];
+      const costsResult = inventoryIds.length
+        ? await supabase.from("number_inventory").select("id,cost").in("id", inventoryIds)
+        : { data: [], error: null };
+      if (!alive) return;
+      const costById = new Map((costsResult.data || []).map((row: any) => [row.id, Number(row.cost || 0)]));
+      const successful = orders.filter((row: any) => ["delivered", "completed", "success"].includes(String(row.status || "").toLowerCase()));
+      const failed = orders.filter((row: any) => ["failed", "cancelled", "canceled", "expired"].includes(String(row.status || "").toLowerCase()));
+      const sumFor = (rows: any[], since: Date, field: "price" | "cost") => rows.reduce((sum, row) => {
+        if (new Date(row.created_at) < since) return sum;
+        return sum + (field === "price" ? Number(row.price || 0) : Number(costById.get(row.inventory_id) || 0));
+      }, 0);
+      const countFor = (rows: any[], since: Date) => rows.filter(row => new Date(row.created_at) >= since).length;
+      const todayOrders = orders.filter((row: any) => new Date(row.created_at) >= startDay);
+      const weekOrders = orders.filter((row: any) => new Date(row.created_at) >= startWeek);
+      const revenueToday = sumFor(successful, startDay, "price");
+      const revenueWeek = sumFor(successful, startWeek, "price");
+      const expensesToday = sumFor(successful, startDay, "cost");
+      const expensesWeek = sumFor(successful, startWeek, "cost");
+      const deliveryDenominator = successful.length + failed.length;
+      setDashboardStats({
+        smsToday: otpDay.count || 0, smsWeek: otpWeek.count || 0,
+        genToday: 0, genWeek: 0,
+        expensesToday, expensesWeek,
+        profitToday: revenueToday - expensesToday, profitWeek: revenueWeek - expensesWeek,
+        revenueToday, revenueWeek,
+        deliveryRate: deliveryDenominator ? successful.length / deliveryDenominator * 100 : 0,
+        loading: false
+      });
+    };
+    void refreshDashboard();
+    const interval = window.setInterval(() => void refreshDashboard(), 30000);
+    const channel = supabase.channel("vertex-main-dashboard-" + user.id)
+      .on("postgres_changes", { event: "*", schema: "public", table: "number_orders" }, () => void refreshDashboard())
+      .on("postgres_changes", { event: "*", schema: "public", table: "otp_messages" }, () => void refreshDashboard())
+      .subscribe();
+    return () => { alive = false; window.clearInterval(interval); void supabase.removeChannel(channel); };
+  }, [user?.id]);
+
   function newCaptcha() {
     setA(Math.floor(Math.random() * 8) + 2);
     setB(Math.floor(Math.random() * 8) + 1);
@@ -316,13 +379,13 @@ export default function Home() {
         </div>
       </> : page === "Dashboard" ? <>
         <p className="welcomeText">{t[0]}</p>
-        <div className="totals"><div><span>{t[2]}</span><b>$3.32</b></div><div><span>{t[3]}</span><b>$3.32</b></div></div>
+        <div className="totals"><div><span>{t[2]}</span><b>{dashboardStats.loading ? "Loading…" : "$" + dashboardStats.expensesToday.toFixed(2)}</b><small>{t[4]} · ${dashboardStats.expensesWeek.toFixed(2)} {t[5]}</small></div><div><span>{t[3]}</span><b>{dashboardStats.loading ? "Loading…" : "$" + dashboardStats.profitToday.toFixed(2)}</b><small>{t[4]} · ${dashboardStats.profitWeek.toFixed(2)} {t[5]}</small></div></div>
         <div className="metricGrid">
           {[
-            { icon:"▤", name:t[6], label:t[4], value:"198", label2:t[5], value2:"2322", color:"#e34b70" },
-            { icon:"◷", name:t[7], label:t[4], value:"0 | $ 0", label2:t[5], value2:"0 | $ 0", color:"#20b889" },
-            { icon:"＄", name:t[8], label:t[4], value:"$ 3.32", label2:t[5], value2:"$ 39.51", color:"#ed8b24" },
-            { icon:"▣", name:t[9], label:"Estimated", value:"99.9467%", color:"#18aa81" }
+            { icon:"▤", name:t[6], label:t[4], value:dashboardStats.loading ? "Loading…" : String(dashboardStats.smsToday), label2:t[5], value2:String(dashboardStats.smsWeek), color:"#e34b70" },
+            { icon:"◷", name:t[7], label:t[4], value:dashboardStats.loading ? "Loading…" : dashboardStats.genToday + " | $ 0.00", label2:t[5], value2:dashboardStats.genWeek + " | $ 0.00", color:"#20b889" },
+            { icon:"＄", name:t[8], label:t[4], value:dashboardStats.loading ? "Loading…" : "$ " + dashboardStats.revenueToday.toFixed(2), label2:t[5], value2:"$ " + dashboardStats.revenueWeek.toFixed(2), color:"#ed8b24" },
+            { icon:"▣", name:t[9], label:"Delivered", value:dashboardStats.loading ? "Loading…" : dashboardStats.deliveryRate.toFixed(2) + "%", color:"#18aa81" }
           ].map(card => <article className="metricCard" key={card.name} style={{ background:panel, borderColor:border }}><div className="metricIcon" style={{ background:card.color }}>{card.icon}</div><div className="metricBody"><b>{card.name}</b><div><span>{card.label}</span><strong>{card.value}</strong></div>{card.value2 && <div><span>{card.label2}</span><strong>{card.value2}</strong></div>}</div></article>)}
         </div>
       </> : page === "SMS Numbers" ? <>
