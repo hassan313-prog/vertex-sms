@@ -1,2 +1,2 @@
-import { redirect } from "next/navigation";
-export default function LoginPage() { redirect("/"); }
+import RoleLogin from "@/components/role-login";
+export default function LoginPage() { return <RoleLogin />; }
