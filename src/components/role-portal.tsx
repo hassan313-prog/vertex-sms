@@ -239,7 +239,7 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
         </div>
         <nav className="portalNav">
           {navigation[expectedRole].map(item => (
-            <button key={item} className={active === item ? "selected" : ""} onClick={() => { setActive(item); setNotice(""); }}>
+            <button key={item} className={active === item ? "selected" : ""} onClick={() => { setActive(item); setNotice(""); if (item === "Managers") setNewRole("manager"); if (item === "Agents") setNewRole("agent"); if (item === "Clients") setNewRole("client"); }}>
               <span>{item === "Overview" ? "▦" : "›"}</span>{item}
             </button>
           ))}
