@@ -1,4 +1,5 @@
 "use client";
+import "./role-portal.css";
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient, type User } from "@supabase/supabase-js";
