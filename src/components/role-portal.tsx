@@ -44,6 +44,7 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
   const [darkTheme, setDarkTheme] = useState(false);
   const [language, setLanguage] = useState("English");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [canListUsers, setCanListUsers] = useState(false);
@@ -244,7 +245,7 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
         </div>
         <nav className="portalNav">
           {navigation[expectedRole].map(item => (
-            <button key={item} className={active === item ? "selected" : ""} onClick={() => { setActive(item); setNotice(""); if (item === "Managers") setNewRole("manager"); if (item === "Agents") setNewRole("agent"); if (item === "Clients") setNewRole("client"); }}>
+            <button key={item} className={active === item ? "selected" : ""} onClick={() => { setMenuOpen(false); setActive(item); setNotice(""); if (item === "Managers") setNewRole("manager"); if (item === "Agents") setNewRole("agent"); if (item === "Clients") setNewRole("client"); }}>
               <span>{item === "Overview" ? "▦" : "›"}</span>{item}
             </button>
           ))}
@@ -261,7 +262,7 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
           <div className="portalTopActions">
             <div className="portalTopControl">
               <button className="portalTopIcon" aria-label="Language" title="Language" onClick={() => setProfileMenuOpen(value => !value)}>◎</button>
-              {profileMenuOpen && <div className="portalDropdown">{["English","Urdu","Hindi"].map(item => <button key={item} onClick={() => { setLanguage(item); setProfileMenuOpen(false); }}>{item}{language === item ? " ✓" : ""}</button>)}</div>}
+              {profileMenuOpen && <div className="portalDropdown">{["English","Urdu","Hindi"].map(item => <button key={item} onClick={() => { setLanguage(item); setLanguageMenuOpen(false); }}>{item}{language === item ? " ✓" : ""}</button>)}</div>}
             </div>
             <button className="portalTopIcon" aria-label="Toggle theme" title="Toggle theme" onClick={() => setDarkTheme(value => !value)}>{darkTheme ? "☀" : "☾"}</button>
             <div className="portalTopControl">
