@@ -14,6 +14,29 @@ as $$
   );
 $$;
 
+create or replace function public.guard_profile_hierarchy_fields()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+begin
+  if auth.role() <> 'service_role'
+     and coalesce(current_setting('app.allow_hierarchy_update', true), '') <> 'on'
+     and (new.role is distinct from old.role
+       or new.parent_id is distinct from old.parent_id
+       or new.is_active is distinct from old.is_active) then
+    raise exception 'Role, parent and active status can only be changed by the authorized hierarchy workflow';
+  end if;
+  return new;
+end;
+$;
+
+drop trigger if exists profiles_guard_hierarchy_fields on public.profiles;
+create trigger profiles_guard_hierarchy_fields
+before update on public.profiles
+for each row execute function public.guard_profile_hierarchy_fields();
+
 create or replace function public.disable_hierarchy_account(p_target_user_id uuid)
 returns uuid[]
 language plpgsql
@@ -74,6 +97,8 @@ begin
         jsonb_build_object('amount', v_balance, 'currency', v_client_currency, 'reference', v_reference));
     end if;
   end if;
+
+  perform set_config('app.allow_hierarchy_update', 'on', true);
 
   if v_target_role = 'agent' then
     update public.profiles set is_active = false, updated_at = now()
