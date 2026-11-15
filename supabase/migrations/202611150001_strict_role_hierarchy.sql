@@ -19,7 +19,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $guard$
 begin
   if auth.role() <> 'service_role'
      and coalesce(current_setting('app.allow_hierarchy_update', true), '') <> 'on'
@@ -30,7 +30,7 @@ begin
   end if;
   return new;
 end;
-$;
+$guard$;
 
 drop trigger if exists profiles_guard_hierarchy_fields on public.profiles;
 create trigger profiles_guard_hierarchy_fields
