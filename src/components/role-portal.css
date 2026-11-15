@@ -141,4 +141,5 @@
  .portalStat strong{font-size:21px}
 }
 @media(max-width:420px){.portalTop small{font-size:8px}.portalTop h1{font-size:19px}.portalTopActions{gap:5px}.portalTopIcon,.portalProfileButton{width:32px;height:32px}.portalStats{grid-template-columns:repeat(2,minmax(0,1fr))}.portalPanel{padding:14px}.portalForm label{font-size:11px}}
-\n.portalLiveLabel{font-size:11px;font-weight:800;letter-spacing:.8px;color:#d8edff;margin:-7px 0 13px}.portalLiveLabel:first-letter{color:#25d18b}\n
+
+.portalLiveLabel{font-size:11px;font-weight:800;letter-spacing:.8px;color:#d8edff;margin:-7px 0 13px}.portalLiveLabel:first-letter{color:#25d18b}
