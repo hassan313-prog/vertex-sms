@@ -168,3 +168,66 @@ drop policy if exists otp_read_own_or_admin on public.otp_messages;
 create policy otp_read_active_own_or_admin on public.otp_messages
 for select to authenticated
 using (public.is_profile_active() and (user_id = auth.uid() or public.is_admin()));
+
+
+create or replace function private.allocate_wallet_balance(p_target_user_id uuid, p_amount numeric, p_description text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $allocation$
+declare
+  v_actor uuid := auth.uid();
+  v_actor_role text;
+  v_target_role text;
+  v_target_parent uuid;
+  v_source_currency text;
+  v_target_currency text;
+  v_reference uuid := gen_random_uuid();
+begin
+  if v_actor is null or not public.is_profile_active() then
+    raise exception 'Active authentication required';
+  end if;
+  if p_target_user_id = v_actor then raise exception 'Cannot allocate balance to your own wallet'; end if;
+  if p_amount is null or p_amount <= 0 or p_amount > 100000000 then
+    raise exception 'Enter a valid amount greater than zero';
+  end if;
+
+  select role into v_actor_role from public.profiles where id = v_actor and is_active;
+  select role, parent_id into v_target_role, v_target_parent
+    from public.profiles where id = p_target_user_id and is_active;
+
+  if v_target_role is null then raise exception 'Target account not found or inactive'; end if;
+  if not (
+    (v_actor_role = 'admin' and v_target_role = 'manager' and v_target_parent is null)
+    or (v_actor_role = 'manager' and v_target_role = 'agent' and v_target_parent = v_actor)
+    or (v_actor_role = 'agent' and v_target_role = 'client' and v_target_parent = v_actor)
+  ) then
+    raise exception 'You can allocate balance only to your directly assigned lower-level account';
+  end if;
+
+  select currency into v_source_currency from public.wallets where user_id = v_actor for update;
+  select currency into v_target_currency from public.wallets where user_id = p_target_user_id for update;
+  if v_source_currency is null or v_target_currency is null then
+    raise exception 'Wallet not found for source or target account';
+  end if;
+  if v_source_currency <> v_target_currency then raise exception 'Wallet currencies must match'; end if;
+
+  update public.wallets set balance = balance - p_amount, updated_at = now()
+    where user_id = v_actor and balance >= p_amount;
+  if not found then raise exception 'Insufficient available balance'; end if;
+
+  update public.wallets set balance = balance + p_amount, updated_at = now()
+    where user_id = p_target_user_id;
+
+  insert into public.wallet_transactions(user_id, amount, currency, transaction_type, status, reference, description)
+  values
+    (v_actor, -p_amount, v_source_currency, 'adjustment', 'completed', v_reference::text, coalesce(p_description, 'Balance allocated')),
+    (p_target_user_id, p_amount, v_target_currency, 'adjustment', 'completed', v_reference::text, coalesce(p_description, 'Balance received'));
+
+  insert into public.audit_logs(actor_id, action, entity_type, entity_id, details)
+  values (v_actor, 'wallet.allocate', 'wallet', p_target_user_id::text,
+    jsonb_build_object('amount', p_amount, 'currency', v_source_currency, 'reference', v_reference));
+  return v_reference;
+end;
+$allocation$;
