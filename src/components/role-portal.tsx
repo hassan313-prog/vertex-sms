@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { createClient, type User } from "@supabase/supabase-js";
 
 type Role = "admin" | "manager" | "agent" | "client";
-type Profile = { id: string; email?: string | null; display_name: string | null; role: Role; company_name?: string | null; parent_id?: string | null; created_at?: string };
+type Profile = { id: string; email?: string | null; display_name: string | null; role: Role; company_name?: string | null; parent_id?: string | null; created_at?: string; is_active?: boolean };
 type Wallet = { user_id: string; balance: number | string; currency: string };
 
 const supabase = createClient(
@@ -21,9 +21,9 @@ const roleNames: Record<Role, string> = {
 };
 
 const navigation: Record<Role, string[]> = {
-  admin: ["Overview", "Managers", "Agents", "Clients", "Wallets & Allocations", "SMS Reports", "SMS CDR", "Settlements", "SMS Rates", "Provider Settings"],
-  manager: ["Overview", "My Agents", "Clients", "Allocate Balance", "Commission", "SMS Reports", "Settlements"],
-  agent: ["Overview", "My Clients", "Allocate Balance", "Commission", "SMS Reports", "Settlements"],
+  admin: ["Overview", "Managers", "Wallets & Allocations", "SMS Reports", "SMS CDR", "Settlements", "SMS Rates", "Provider Settings"],
+  manager: ["Overview", "Agents", "Allocate Balance", "Commission", "SMS Reports", "Settlements"],
+  agent: ["Overview", "Clients", "Allocate Balance", "Commission", "SMS Reports", "Settlements"],
   client: ["Overview", "Send SMS", "API Integration", "Delivery Reports", "Transactions", "My Account"]
 };
 
@@ -50,7 +50,7 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
   const [notice, setNotice] = useState("");
   const [canListUsers, setCanListUsers] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [newRole, setNewRole] = useState<"manager" | "agent" | "client">("manager");
+  const [newRole, setNewRole] = useState<"manager" | "agent" | "client">(expectedRole === "admin" ? "manager" : expectedRole === "manager" ? "agent" : "client");
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newCompany, setNewCompany] = useState("");
@@ -63,7 +63,7 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
   async function refreshDirectory() {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id,email,display_name,role,company_name,parent_id,created_at")
+      .select("id,email,display_name,role,company_name,parent_id,created_at,is_active")
       .order("created_at", { ascending: false })
       .limit(500);
     if (!error && data) {
@@ -213,26 +213,23 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
     ];
   }, [expectedRole, users, wallet, liveStats]);
 
-  const selectedRoleUsers = users.filter(item => item.role === (active === "Managers" ? "manager" : active === "Agents" ? "agent" : "client"));
-  const parentOptions = users.filter(item => item.role === (newRole === "agent" ? "manager" : "agent"));
-  const allocationTargets = users.filter(item => item.role !== "admin");
+  const managedRole: Role | null = expectedRole === "admin" ? "manager" : expectedRole === "manager" ? "agent" : expectedRole === "agent" ? "client" : null;
+  const selectedRoleUsers = users.filter(item => item.role === managedRole);
+  const allocationTargets = users.filter(item => item.role === managedRole && item.is_active !== false);
 
   async function createAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setNotice("");
-    if (newRole !== "manager" && !parentId) {
-      setNotice(newRole === "agent" ? "Please select the Manager for this Agent." : "Please select the Agent for this Client.");
-      return;
-    }
+    if (!managedRole || newRole !== managedRole || expectedRole === "client") { setNotice("Your role cannot create this account type."); return; }
     setSaving(true);
     const { data, error } = await supabase.functions.invoke("admin-create-account", {
       body: {
+        action: "create",
         email: newEmail.trim(),
         password: newPassword,
         display_name: newName.trim(),
         company_name: newCompany.trim(),
-        role: newRole,
-        parent_id: newRole === "manager" ? null : parentId
+        role: newRole
       }
     });
     setSaving(false);
@@ -243,6 +240,28 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
     setNotice(newRole.toUpperCase() + " account successfully create ho gaya.");
     setNewName(""); setNewEmail(""); setNewCompany(""); setNewPassword(""); setParentId("");
     await refreshDirectory();
+  }
+
+  async function manageAccount(action: "disable" | "update", item: Profile) {
+    if (!managedRole || item.role !== managedRole) return;
+    let payload: Record<string, string> = { action, user_id: item.id };
+    if (action === "disable") {
+      if (!window.confirm("Disable this account? " + (item.role === "agent" ? "All of this Agent’s Clients will also be disabled." : "The Client’s remaining wallet balance will be refunded to you."))) return;
+    } else {
+      const display_name = window.prompt("Account name", item.display_name || "")?.trim();
+      if (!display_name) return;
+      const email = window.prompt("Email address", item.email || "")?.trim();
+      if (!email) return;
+      const company_name = window.prompt("Company name", item.company_name || "") ?? "";
+      payload = { ...payload, display_name, email, company_name };
+    }
+    setSaving(true); setNotice("");
+    const { data, error } = await supabase.functions.invoke("admin-create-account", { body: payload });
+    setSaving(false);
+    if (error || data?.error) { setNotice(data?.error || error?.message || "Account update failed."); return; }
+    setNotice(action === "disable" ? "Account disabled successfully." : "Account updated successfully.");
+    await refreshDirectory();
+    if (user) await refreshWallet(user.id);
   }
 
   async function allocateBalance(event: FormEvent<HTMLFormElement>) {
@@ -335,26 +354,25 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
               <div><b>03</b><span><strong>SMS provider</strong><small>Connect an authorized SMS gateway for real sending and delivery receipts.</small></span></div>
             </div>}
           </section>
-        </> : expectedRole === "admin" && ["Managers", "Agents", "Clients"].includes(active) ? (
+        </> : managedRole && ((expectedRole === "admin" && active === "Managers") || (expectedRole === "manager" && active === "Agents") || (expectedRole === "agent" && active === "Clients")) ? (
           <div className="portalWorkGrid">
             <section className="portalPanel">
               <div className="portalPanelHead"><div><h2>{active} Directory</h2><p>{selectedRoleUsers.length} account(s) in this category</p></div></div>
-              <div className="portalTableWrap"><table className="portalTable"><thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Parent</th><th>Created</th></tr></thead><tbody>
-                {selectedRoleUsers.map(item => <tr key={item.id}><td>{item.display_name || "—"}</td><td>{item.email || "—"}</td><td>{item.company_name || "—"}</td><td>{users.find(p => p.id === item.parent_id)?.display_name || "—"}</td><td>{item.created_at ? new Date(item.created_at).toLocaleDateString() : "—"}</td></tr>)}
-                {selectedRoleUsers.length === 0 && <tr><td colSpan={5}>No {active.toLowerCase()} created yet.</td></tr>}
+              <div className="portalTableWrap"><table className="portalTable"><thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>
+                {selectedRoleUsers.map(item => <tr key={item.id}><td>{item.display_name || "—"}</td><td>{item.email || "—"}</td><td>{item.company_name || "—"}</td><td>{item.is_active === false ? "Disabled" : "Active"}</td><td>{item.created_at ? new Date(item.created_at).toLocaleDateString() : "—"}</td><td>{item.is_active === false ? "—" : <><button type="button" onClick={() => void manageAccount("update", item)} disabled={saving}>Edit</button> <button type="button" onClick={() => void manageAccount("disable", item)} disabled={saving}>Remove</button></>}</td></tr>)}
+                {selectedRoleUsers.length === 0 && <tr><td colSpan={6}>No {active.toLowerCase()} created yet.</td></tr>}
               </tbody></table></div>
             </section>
             <section className="portalPanel">
               <h2>Create New Account</h2>
-              <p className="portalIntro">Admin-created accounts only. Login details user ko securely share karein.</p>
+              <p className="portalIntro">You can create and manage only your directly assigned {managedRole} accounts.</p>
               <form className="portalForm" onSubmit={createAccount}>
-                <label>Account Type<select value={newRole} onChange={e => { setNewRole(e.target.value as "manager" | "agent" | "client"); setParentId(""); }}><option value="manager">Manager</option><option value="agent">Agent</option><option value="client">Client</option></select></label>
-                {newRole !== "manager" && <label>{newRole === "agent" ? "Assign Manager" : "Assign Agent"}<select required value={parentId} onChange={e => setParentId(e.target.value)}><option value="">Select {newRole === "agent" ? "Manager" : "Agent"}</option>{parentOptions.map(p => <option key={p.id} value={p.id}>{p.display_name || p.email} ({p.email || p.role})</option>)}</select></label>}
+                <label>Account Type<input value={managedRole || ""} readOnly /></label>
                 <label>Full Name<input required value={newName} onChange={e => setNewName(e.target.value)} placeholder="Enter full name" /></label>
                 <label>Email Address<input required type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="name@example.com" /></label>
                 <label>Company Name<input value={newCompany} onChange={e => setNewCompany(e.target.value)} placeholder="Company (optional)" /></label>
                 <label>Temporary Password<input required minLength={8} type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="At least 8 characters" /></label>
-                <button className="portalPrimary" disabled={saving}>{saving ? "Creating account..." : "Create " + newRole}</button>
+                <button className="portalPrimary" disabled={saving}>{saving ? "Creating account..." : "Create " + managedRole}</button>
               </form>
             </section>
           </div>
@@ -386,9 +404,9 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
                 <button className="portalPrimary" disabled={saving || !allocationTargets.length}>{saving ? "Processing..." : "Transfer Balance"}</button>
               </form>
             </section>
-            <section className="portalPanel"><h2>My {expectedRole === "manager" ? "Agents" : "Clients"}</h2><div className="portalTableWrap"><table className="portalTable"><thead><tr><th>Name</th><th>Email</th><th>Company</th></tr></thead><tbody>{users.map(p => <tr key={p.id}><td>{p.display_name || "—"}</td><td>{p.email || "—"}</td><td>{p.company_name || "—"}</td></tr>)}{!users.length && <tr><td colSpan={3}>No assigned accounts yet.</td></tr>}</tbody></table></div></section>
+            <section className="portalPanel"><h2>My {expectedRole === "manager" ? "Agents" : "Clients"}</h2><div className="portalTableWrap"><table className="portalTable"><thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Status</th><th>Actions</th></tr></thead><tbody>{users.filter(p => p.role === managedRole).map(p => <tr key={p.id}><td>{p.display_name || "—"}</td><td>{p.email || "—"}</td><td>{p.company_name || "—"}</td><td>{p.is_active === false ? "Disabled" : "Active"}</td><td>{p.is_active === false ? "—" : <><button type="button" onClick={() => void manageAccount("update", p)} disabled={saving}>Edit</button> <button type="button" onClick={() => void manageAccount("disable", p)} disabled={saving}>Remove</button></>}</td></tr>)}{!users.length && <tr><td colSpan={5}>No assigned accounts yet.</td></tr>}</tbody></table></div></section>
           </div>
-        ) : (expectedRole === "manager" && active === "My Agents") || (expectedRole === "agent" && active === "My Clients") ? (
+        ) : (expectedRole === "manager" && active === "Agents") || (expectedRole === "agent" && active === "Clients") ? (
           <section className="portalPanel"><h2>{active}</h2><div className="portalTableWrap"><table className="portalTable"><thead><tr><th>Name</th><th>Email</th><th>Company</th></tr></thead><tbody>{users.map(p => <tr key={p.id}><td>{p.display_name || "—"}</td><td>{p.email || "—"}</td><td>{p.company_name || "—"}</td></tr>)}{!users.length && <tr><td colSpan={3}>No assigned accounts yet.</td></tr>}</tbody></table></div></section>
         ) : <section className="portalPanel">
           <h2>{active}</h2>
