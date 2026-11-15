@@ -47,3 +47,97 @@
 @media(max-width:1050px){.portalStats{grid-template-columns:repeat(2,minmax(0,1fr))}.portalWorkGrid{grid-template-columns:1fr}}
 @media(max-width:700px){.portalSidebar{width:190px;flex-basis:190px;padding:14px 8px}.portalMain{padding:20px 13px}.portalTop h1{font-size:21px}.portalNav button{font-size:11px;padding:10px 7px}.portalStats{gap:8px}.portalStat{padding:12px;min-height:105px}.portalStat strong{font-size:19px}}
 @media(max-width:520px){.portalShell{display:block}.portalSidebar{width:100%;min-height:auto;padding:10px 12px;border-right:0;border-bottom:1px solid #294a70}.portalBrand{padding:2px 3px 10px}.portalIdentity{display:none}.portalNav{display:flex;overflow:auto;padding:4px 0 10px;gap:5px}.portalNav button{white-space:nowrap;flex:0 0 auto;padding:9px 10px}.portalLogout{margin-top:4px;align-self:flex-start;padding:7px 12px;font-size:10px}.portalMain{padding:16px 11px}.portalStats{grid-template-columns:repeat(2,minmax(0,1fr))}.portalTop{align-items:flex-start}.portalUser{font-size:10px}}
+
+
+/* TempNumbers-inspired Vertex SMS responsive workspace */
+.portalShell{min-height:100vh;display:flex;background:linear-gradient(135deg,#164b86 0%,#176fa2 55%,#1687a5 100%);color:#172b45;font-family:Arial,Helvetica,sans-serif}
+.portalSidebar{width:292px;flex:0 0 292px;min-height:100vh;position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;background:#fff;color:#536785;border-right:1px solid #dce5ef;padding:18px 15px;box-shadow:4px 0 22px #082e5510;z-index:20}
+.portalBrand{display:flex;align-items:center;gap:10px;padding:5px 8px 19px;border-bottom:1px solid #edf1f6;color:#183a60;font-size:17px;letter-spacing:.8px}
+.portalBrand>span{width:35px;height:35px;border-radius:9px;background:linear-gradient(145deg,#176fc4,#164a84);display:grid;place-items:center;color:#fff;font-size:22px;font-weight:900;font-style:italic}
+.portalBrand i{font-style:normal;color:#176fc4}
+.portalIdentity{text-align:center;padding:22px 6px 18px;border-bottom:1px solid #edf1f6}
+.portalAvatar{width:76px;height:76px;border-radius:50%;background:#c7cbd1;color:#fff;display:grid;place-items:center;font-size:27px;font-weight:700;margin:0 auto 12px}
+.portalIdentity>b{display:block;font-size:16px;color:#536785;overflow-wrap:anywhere}
+.portalIdentity>small{display:block;font-size:13px;color:#71839d;margin-top:6px}
+.portalNav{display:grid;gap:5px;padding:15px 0}
+.portalNav button{width:100%;display:flex;align-items:center;gap:13px;text-align:left;padding:13px 11px;border:0;border-radius:8px;background:transparent;color:#526887;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
+.portalNav button>span:first-child{width:22px;flex:0 0 22px;text-align:center;color:#587394;font-size:19px}
+.portalNav button:hover,.portalNav button.selected{background:#eaf3fc;color:#155d9f}
+.portalNav button.selected>span:first-child{color:#1679d5}
+.portalLogout{width:100%;border:0;border-radius:8px;background:#f0f5fa;color:#4f6785;padding:12px;text-align:left;font-size:13px;font-weight:700;cursor:pointer}
+.portalMain{flex:1;min-width:0;padding:0 27px 25px;background:transparent}
+.portalTop{min-height:88px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #ffffff35;color:#fff;margin:0 -27px 23px;padding:13px 27px}
+.portalTopTitle{display:flex;align-items:center;gap:13px;min-width:0}
+.portalTop small{font-size:10px;letter-spacing:1.2px;color:#d3e5f7}
+.portalTop h1{font-size:25px;margin:5px 0 0;color:#fff}
+.portalTopActions{display:flex;align-items:center;gap:11px}
+.portalTopControl{position:relative}
+.portalTopIcon,.portalProfileButton{width:42px;height:42px;border:1px solid #ffffff40;border-radius:50%;background:#ffffff12;color:#fff;display:grid;place-items:center;font-size:21px;cursor:pointer}
+.portalProfileButton{background:#c2c5ca;color:#fff;border:0;font-size:16px;font-weight:700}
+.portalDropdown{position:absolute;right:0;top:49px;z-index:40;min-width:165px;padding:7px;background:#fff;border:1px solid #dce5ef;border-radius:10px;box-shadow:0 12px 30px #082e5530;color:#243e5d}
+.portalDropdown>b{display:block;padding:9px 10px;border-bottom:1px solid #edf1f6;font-size:12px;overflow-wrap:anywhere}
+.portalDropdown button{display:block;width:100%;padding:10px;border:0;border-radius:6px;background:transparent;color:#536785;text-align:left;font-size:12px;cursor:pointer}
+.portalDropdown button:hover{background:#eef5fc}
+.portalIntro{color:#e2eef9;font-size:13px;line-height:1.6;margin:0 0 18px}
+.portalNotice{padding:11px 13px;border:1px solid #ffffff55;border-radius:8px;background:#0d3d6c;color:#fff;font-size:12px;margin:0 0 15px;overflow-wrap:anywhere}
+.portalStats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin-bottom:20px}
+.portalStat{background:#fff;border:1px solid #e1e9f2;border-radius:12px;padding:19px;min-height:132px;display:flex;flex-direction:column;gap:9px;box-shadow:0 7px 24px #082e5512}
+.portalStat small{font-size:12px;color:#6e829c}.portalStat strong{font-size:25px;color:#172f4d}.portalStat span{font-size:11px;line-height:1.4;color:#8797aa}
+.portalPanel{min-width:0;background:#fff;border:1px solid #e1e9f2;border-radius:12px;padding:19px;margin-bottom:16px;box-shadow:0 7px 24px #082e5512}
+.portalPanel h2{font-size:17px;margin:0 0 8px;color:#1d3858}.portalPanelHead{display:flex;justify-content:space-between;gap:12px;margin-bottom:13px}
+.portalPanelHead p{margin:0;color:#8292a7;font-size:12px}
+.portalTableWrap{width:100%;overflow:auto;border:1px solid #e3eaf2;border-radius:8px}
+.portalTable{width:100%;min-width:620px;border-collapse:collapse;font-size:12px}
+.portalTable th{background:#edf4fb;text-align:left;color:#385473;padding:12px;white-space:nowrap}
+.portalTable td{padding:12px;border-top:1px solid #edf1f6;color:#526780;white-space:nowrap}
+.portalTable tbody tr:nth-child(even){background:#f8fafc}
+.portalRole{display:inline-block;border-radius:20px;background:#e6f2ff;color:#176fc4;padding:4px 9px;text-transform:capitalize;font-size:10px}
+.portalSteps{display:grid;gap:12px}.portalSteps>div{display:flex;gap:13px;align-items:center;border:1px solid #e5ebf2;background:#f8fafc;border-radius:8px;padding:13px}
+.portalSteps>div>b{color:#1679d5;font-size:17px}.portalSteps strong,.portalSteps small{display:block}.portalSteps strong{font-size:12px;color:#304966}.portalSteps small{font-size:11px;color:#8797aa;margin-top:4px}
+.portalWorkGrid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:15px;align-items:start}
+.portalForm{display:grid;gap:12px;margin-top:14px}
+.portalForm label{display:grid;gap:6px;color:#526780;font-size:12px;font-weight:700}
+.portalForm input,.portalForm select{width:100%;height:42px;background:#fff;border:1px solid #d6e0eb;border-radius:7px;color:#203a59;padding:0 11px;outline:none;font-size:13px}
+.portalForm input:focus,.portalForm select:focus{border-color:#2688f5;box-shadow:0 0 0 3px #1679eb20}
+.portalPrimary{border:0;border-radius:7px;background:#1679eb;color:#fff;padding:12px 16px;font-size:13px;font-weight:800;cursor:pointer;margin-top:4px}
+.portalPrimary:disabled{opacity:.6;cursor:wait}
+.portalBalanceLine{display:flex;justify-content:space-between;gap:12px;padding:13px;background:#f0f6fc;border:1px solid #dce8f4;border-radius:8px;font-size:12px;color:#647b96}
+.portalBalanceLine strong{color:#1d3858;font-size:15px}
+.portalFooter{text-align:center;color:#d9e8f6;font-size:11px;padding:25px 0 8px}
+.portalLoading{min-height:100vh;display:grid;place-items:center;background:#164b86;color:#fff}
+.portalHamburger{display:none;width:39px;height:39px;border:1px solid #ffffff55;border-radius:8px;background:#ffffff12;align-items:center;justify-content:center;flex-direction:column;gap:5px;cursor:pointer}
+.portalHamburger span{display:block;width:18px;height:2px;background:#fff;border-radius:2px}
+.portalVeil{display:none}
+.portalDark .portalSidebar{background:#0d1d32;color:#c4d2e2;border-color:#294a70}
+.portalDark .portalBrand,.portalDark .portalIdentity>b{color:#edf5ff}
+.portalDark .portalIdentity,.portalDark .portalBrand{border-color:#294a70}
+.portalDark .portalNav button{color:#c1d1e4}
+.portalDark .portalNav button:hover,.portalDark .portalNav button.selected{background:#173e66;color:#fff}
+.portalDark .portalPanel,.portalDark .portalStat{background:#0d2037;border-color:#294a70;color:#eef5fc}
+.portalDark .portalPanel h2,.portalDark .portalStat strong{color:#fff}
+.portalDark .portalTable th{background:#12365b;color:#fff}
+.portalDark .portalTable td{background:#0d2037;color:#d1dfef;border-color:#294a70}
+.portalDark .portalForm label{color:#d1dfef}
+.portalDark .portalForm input,.portalDark .portalForm select{background:#091a2e;border-color:#315477;color:#fff}
+.portalDark .portalBalanceLine{background:#102943;border-color:#315477;color:#a9bdd4}
+.portalDark .portalBalanceLine strong{color:#fff}
+.portalDark .portalSteps>div{background:#10243c;border-color:#294a70}
+.portalDark .portalSteps strong{color:#fff}
+.portalDark .portalSteps small,.portalDark .portalPanelHead p,.portalDark .portalStat small,.portalDark .portalStat span{color:#9db1c9}
+@media(max-width:1050px){.portalWorkGrid{grid-template-columns:1fr}.portalSidebar{width:255px;flex-basis:255px}}
+@media(max-width:700px){
+ .portalShell{display:block}
+ .portalSidebar{position:fixed;left:0;top:0;bottom:0;height:100dvh;width:min(82vw,340px);max-width:none;min-height:0;transform:translateX(-105%);transition:transform .22s ease;box-shadow:12px 0 35px #06172b30}
+ .portalSidebarOpen{transform:translateX(0)}
+ .portalVeil{display:block;position:fixed;inset:0;z-index:19;border:0;background:#07182a80;backdrop-filter:blur(2px)}
+ .portalMain{padding:0 14px 20px}
+ .portalTop{margin:0 -14px 18px;padding:12px 14px;min-height:76px}
+ .portalTop h1{font-size:21px}
+ .portalHamburger{display:flex;flex:0 0 auto}
+ .portalTopActions{gap:7px}
+ .portalTopIcon,.portalProfileButton{width:36px;height:36px;font-size:18px}
+ .portalStats{gap:9px}
+ .portalStat{padding:14px;min-height:116px}
+ .portalStat strong{font-size:21px}
+}
+@media(max-width:420px){.portalTop small{font-size:8px}.portalTop h1{font-size:19px}.portalTopActions{gap:5px}.portalTopIcon,.portalProfileButton{width:32px;height:32px}.portalStats{grid-template-columns:repeat(2,minmax(0,1fr))}.portalPanel{padding:14px}.portalForm label{font-size:11px}}
