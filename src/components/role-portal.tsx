@@ -117,6 +117,13 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
           setUsers(profileRows as Profile[]);
           setCanListUsers(true);
         }
+      } else if (actualRole === "manager" || actualRole === "agent") {
+        const { data: childRows } = await supabase
+          .from("profiles")
+          .select("id,email,display_name,role,company_name,parent_id,created_at")
+          .eq("parent_id", currentUser.id)
+          .order("created_at", { ascending: false });
+        if (alive && childRows) setUsers(childRows as Profile[]);
       }
       if (alive) setLoading(false);
     };
@@ -202,7 +209,7 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
     const { data, error } = await supabase.rpc("allocate_wallet_balance", {
       p_target_user_id: targetId,
       p_amount: numericAmount,
-      p_description: allocationNote.trim() || "Admin balance allocation"
+      p_description: allocationNote.trim() || "Balance allocation"
     });
     setSaving(false);
     if (error) {
@@ -303,6 +310,23 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
             </section>
             <section className="portalPanel"><h2>Account Wallets</h2><div className="portalTableWrap"><table className="portalTable"><thead><tr><th>Account</th><th>Role</th><th>Parent</th></tr></thead><tbody>{allocationTargets.map(p => <tr key={p.id}><td>{p.display_name || p.email}</td><td>{p.role}</td><td>{users.find(x => x.id === p.parent_id)?.display_name || "—"}</td></tr>)}{!allocationTargets.length && <tr><td colSpan={3}>Create an account first.</td></tr>}</tbody></table></div></section>
           </div>
+        ) : (expectedRole === "manager" || expectedRole === "agent") && active === "Allocate Balance" ? (
+          <div className="portalWorkGrid">
+            <section className="portalPanel">
+              <h2>Allocate Balance</h2>
+              <p className="portalIntro">Transfer funds from your wallet to your assigned {expectedRole === "manager" ? "Agents" : "Clients"}. Every transfer is recorded in both wallets.</p>
+              <div className="portalBalanceLine"><span>Available Balance</span><strong>{wallet ? Number(wallet.balance).toFixed(2) + " " + wallet.currency : "Wallet not found"}</strong></div>
+              <form className="portalForm" onSubmit={allocateBalance}>
+                <label>Allocate To<select required value={targetId} onChange={e => setTargetId(e.target.value)}><option value="">Select account</option>{allocationTargets.map(p => <option key={p.id} value={p.id}>{p.display_name || p.email} — {p.role}</option>)}</select></label>
+                <label>Amount ({wallet?.currency || "USD"})<input required type="number" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" /></label>
+                <label>Note (optional)<input value={allocationNote} onChange={e => setAllocationNote(e.target.value)} placeholder="Payment or allocation note" /></label>
+                <button className="portalPrimary" disabled={saving || !allocationTargets.length}>{saving ? "Processing..." : "Transfer Balance"}</button>
+              </form>
+            </section>
+            <section className="portalPanel"><h2>My {expectedRole === "manager" ? "Agents" : "Clients"}</h2><div className="portalTableWrap"><table className="portalTable"><thead><tr><th>Name</th><th>Email</th><th>Company</th></tr></thead><tbody>{users.map(p => <tr key={p.id}><td>{p.display_name || "—"}</td><td>{p.email || "—"}</td><td>{p.company_name || "—"}</td></tr>)}{!users.length && <tr><td colSpan={3}>No assigned accounts yet.</td></tr>}</tbody></table></div></section>
+          </div>
+        ) : (expectedRole === "manager" && active === "My Agents") || (expectedRole === "agent" && active === "My Clients") ? (
+          <section className="portalPanel"><h2>{active}</h2><div className="portalTableWrap"><table className="portalTable"><thead><tr><th>Name</th><th>Email</th><th>Company</th></tr></thead><tbody>{users.map(p => <tr key={p.id}><td>{p.display_name || "—"}</td><td>{p.email || "—"}</td><td>{p.company_name || "—"}</td></tr>)}{!users.length && <tr><td colSpan={3}>No assigned accounts yet.</td></tr>}</tbody></table></div></section>
         ) : <section className="portalPanel">
           <h2>{active}</h2>
           <p className="portalIntro">{active === "Send SMS" ? "SMS sending will be enabled after an authorized provider API/SMPP connection and billing controls are configured." : "This module is part of the Vertex SMS platform. Its live workflow will be connected in the next implementation step."}</p>
