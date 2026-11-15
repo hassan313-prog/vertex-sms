@@ -90,7 +90,7 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
       }
       const { data: profileData, error } = await supabase
         .from("profiles")
-        .select("id,email,display_name,role,company_name,parent_id,created_at")
+        .select("id,email,display_name,role,company_name,parent_id,created_at,is_active")
         .eq("id", currentUser.id)
         .maybeSingle();
       if (!alive) return;
@@ -116,7 +116,7 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
       if (actualRole === "admin") {
         const { data: profileRows, error: listError } = await supabase
           .from("profiles")
-          .select("id,email,display_name,role,company_name,parent_id,created_at")
+          .select("id,email,display_name,role,company_name,parent_id,created_at,is_active")
           .order("created_at", { ascending: false })
           .limit(500);
         if (alive && !listError && profileRows) {
@@ -126,7 +126,7 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
       } else if (actualRole === "manager" || actualRole === "agent") {
         const { data: childRows } = await supabase
           .from("profiles")
-          .select("id,email,display_name,role,company_name,parent_id,created_at")
+          .select("id,email,display_name,role,company_name,parent_id,created_at,is_active")
           .eq("parent_id", currentUser.id)
           .order("created_at", { ascending: false });
         if (alive && childRows) setUsers(childRows as Profile[]);
