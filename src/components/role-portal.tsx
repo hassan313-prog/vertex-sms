@@ -154,14 +154,13 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
       weekStartDate.setDate(weekStartDate.getDate() - day);
       weekStartDate.setHours(0, 0, 0, 0);
       const weekStart = weekStartDate.toISOString();
-      const scoped = (query: any) => expectedRole === "admin" ? query : query.eq("user_id", user.id);
       const [ordersDay, ordersWeek, otpDay, otpWeek, txDay, txWeek, inventory, walletRows] = await Promise.all([
-        scoped(supabase.from("number_orders").select("id", { count: "exact", head: true })).gte("created_at", dayStart),
-        scoped(supabase.from("number_orders").select("id", { count: "exact", head: true })).gte("created_at", weekStart),
-        scoped(supabase.from("otp_messages").select("id", { count: "exact", head: true })).gte("received_at", dayStart),
-        scoped(supabase.from("otp_messages").select("id", { count: "exact", head: true })).gte("received_at", weekStart),
-        scoped(supabase.from("wallet_transactions").select("id", { count: "exact", head: true })).gte("created_at", dayStart),
-        scoped(supabase.from("wallet_transactions").select("id", { count: "exact", head: true })).gte("created_at", weekStart),
+        expectedRole === "admin" ? supabase.from("number_orders").select("id", { count: "exact", head: true }).gte("created_at", dayStart) : supabase.from("number_orders").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", dayStart),
+        expectedRole === "admin" ? supabase.from("number_orders").select("id", { count: "exact", head: true }).gte("created_at", weekStart) : supabase.from("number_orders").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", weekStart),
+        expectedRole === "admin" ? supabase.from("otp_messages").select("id", { count: "exact", head: true }).gte("received_at", dayStart) : supabase.from("otp_messages").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("received_at", dayStart),
+        expectedRole === "admin" ? supabase.from("otp_messages").select("id", { count: "exact", head: true }).gte("received_at", weekStart) : supabase.from("otp_messages").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("received_at", weekStart),
+        expectedRole === "admin" ? supabase.from("wallet_transactions").select("id", { count: "exact", head: true }).gte("created_at", dayStart) : supabase.from("wallet_transactions").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", dayStart),
+        expectedRole === "admin" ? supabase.from("wallet_transactions").select("id", { count: "exact", head: true }).gte("created_at", weekStart) : supabase.from("wallet_transactions").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", weekStart),
         expectedRole === "admin" ? supabase.from("number_inventory").select("id", { count: "exact", head: true }).eq("status", "available") : Promise.resolve({ count: null, error: null }),
         expectedRole === "admin" ? supabase.from("wallets").select("balance") : supabase.from("wallets").select("balance").eq("user_id", user.id)
       ]);
