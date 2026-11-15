@@ -40,6 +40,10 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [users, setUsers] = useState<Profile[]>([]);
   const [active, setActive] = useState("Overview");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [darkTheme, setDarkTheme] = useState(false);
+  const [language, setLanguage] = useState("English");
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [canListUsers, setCanListUsers] = useState(false);
@@ -229,8 +233,9 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
   if (loading) return <main className="portalLoading">Loading your secure workspace…</main>;
 
   return (
-    <main className="portalShell">
-      <aside className="portalSidebar">
+    <main className={`portalShell ${darkTheme ? "portalDark" : "portalLight"}`}>
+      {menuOpen && <button className="portalVeil" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
+      <aside className={`portalSidebar ${menuOpen ? "portalSidebarOpen" : ""}`}>
         <div className="portalBrand"><span>V</span><b>VERTEX <i>SMS</i></b></div>
         <div className="portalIdentity">
           <div className="portalAvatar">{(profile?.display_name || user?.email || "V").slice(0, 1).toUpperCase()}</div>
@@ -249,8 +254,21 @@ export default function RolePortal({ expectedRole }: { expectedRole: Role }) {
 
       <section className="portalMain">
         <header className="portalTop">
-          <div><small>VERTEX SMS / {title.toUpperCase()}</small><h1>{active}</h1></div>
-          <div className="portalUser">{profile?.display_name || user?.email}<span>{title}</span></div>
+          <div className="portalTopTitle">
+            <button className="portalHamburger" aria-label="Open navigation" onClick={() => setMenuOpen(true)}><span/><span/><span/></button>
+            <div><small>VERTEX SMS / {title.toUpperCase()}</small><h1>{active}</h1></div>
+          </div>
+          <div className="portalTopActions">
+            <div className="portalTopControl">
+              <button className="portalTopIcon" aria-label="Language" title="Language" onClick={() => setProfileMenuOpen(value => !value)}>◎</button>
+              {profileMenuOpen && <div className="portalDropdown">{["English","Urdu","Hindi"].map(item => <button key={item} onClick={() => { setLanguage(item); setProfileMenuOpen(false); }}>{item}{language === item ? " ✓" : ""}</button>)}</div>}
+            </div>
+            <button className="portalTopIcon" aria-label="Toggle theme" title="Toggle theme" onClick={() => setDarkTheme(value => !value)}>{darkTheme ? "☀" : "☾"}</button>
+            <div className="portalTopControl">
+              <button className="portalProfileButton" aria-label="Profile menu" onClick={() => setProfileMenuOpen(value => !value)}>{(profile?.display_name || user?.email || "V").slice(0,1).toUpperCase()}</button>
+              {profileMenuOpen && <div className="portalDropdown"><b>{profile?.display_name || user?.email}</b><button onClick={() => { setActive("My Profile"); setProfileMenuOpen(false); }}>My Profile</button><button onClick={() => setProfileMenuOpen(false)}>Notification</button><button onClick={() => setProfileMenuOpen(false)}>Activity Logs</button><button onClick={logout}>Logout</button></div>}
+            </div>
+          </div>
         </header>
         {notice && <div className="portalNotice">{notice}</div>}
 
